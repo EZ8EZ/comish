@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Comish admin{% endblock %}</title>
+  <style>
+    :root { --fg: #1c1e21; --muted: #65676b; --line: #dadde1; --bg: #fff; --soft: #f5f6f7;
+            --ok: #1f7a3a; --warn: #9a6700; --bad: #b42318; --accent: #1d4ed8; }
+    @media (prefers-color-scheme: dark) {
+      :root { --fg: #e4e6eb; --muted: #b0b3b8; --line: #3e4042; --bg: #18191a; --soft: #242526;
+              --ok: #4ade80; --warn: #fbbf24; --bad: #f87171; --accent: #60a5fa; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.5 system-ui, -apple-system, sans-serif; color: var(--fg);
+           background: var(--bg); }
+    header { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 16px;
+             align-items: baseline; flex-wrap: wrap; }
+    header a.brand { font-weight: 700; color: var(--fg); text-decoration: none; }
+    main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    a { color: var(--accent); }
+    h1 { font-size: 22px; margin: 8px 0 16px; }
+    h2 { font-size: 17px; margin: 24px 0 8px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 13px; }
+    .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px;
+            border: 1px solid currentColor; }
+    .approved { color: var(--ok); } .pending_review { color: var(--warn); }
+    .rejected, .failed { color: var(--bad); } .archived, .superseded { color: var(--muted); }
+    .muted { color: var(--muted); }
+    .flash { padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; background: var(--soft); }
+    .flash.error { color: var(--bad); border: 1px solid var(--bad); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    form.inline { display: inline; }
+    button { font: inherit; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--line);
+             background: var(--soft); color: var(--fg); cursor: pointer; }
+    button.primary { border-color: var(--ok); color: var(--ok); }
+    button.danger { border-color: var(--bad); color: var(--bad); }
+    input, textarea { font: inherit; padding: 4px 8px; border: 1px solid var(--line);
+                      border-radius: 6px; background: var(--bg); color: var(--fg); }
+    textarea { width: 100%; min-height: 120px; }
+    pre { white-space: pre-wrap; background: var(--soft); padding: 8px; border-radius: 6px; margin: 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    img.shot { max-width: 100%; border: 1px solid var(--line); border-radius: 6px; }
+    .diff { color: var(--bad); font-weight: 600; }
+    .scroll { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/">Comish admin</a>
+    {% block nav %}{% endblock %}
+  </header>
+  <main>
+    {% if error %}<div class="flash error" data-testid="error">{{ error }}</div>{% endif %}
+    {% if notice %}<div class="flash" data-testid="notice">{{ notice }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

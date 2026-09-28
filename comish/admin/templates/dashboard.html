@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_status.html" import pill %}
+{% block content %}
+<h1>Leagues</h1>
+<div class="scroll">
+<table>
+  <tr><th>League</th><th>Sport</th><th>Needs review</th><th>Citable records</th><th>Failed</th><th>Last sync</th></tr>
+  {% for row in rows %}
+  <tr>
+    <td><a href="/l/{{ row.league.slug }}">{{ row.league.name }}</a>
+      {% if row.league.ruling_authority == 'relay' %}<div class="muted">rulings relayed from {{ row.league.commissioner_name }}</div>{% endif %}</td>
+    <td>{{ row.league.sport | upper }}</td>
+    <td>{{ row.counts.pending_sources }} sources, {{ row.counts.pending_records }} records</td>
+    <td>{{ row.counts.citable_records }}</td>
+    <td>{{ row.counts.failed_sources }}</td>
+    <td>{{ row.sync.finished_at if row.sync else 'never' }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" class="muted">No leagues configured. Run <code>comish league add</code>.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

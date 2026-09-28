@@ -1,0 +1,3 @@
+{% macro pill(status) -%}
+<span class="pill {{ status }}">{{ status | replace('_', ' ') }}</span>
+{%- endmacro %}

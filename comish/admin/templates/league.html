@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_status.html" import pill %}
+{% block title %}{{ league.name }}: Comish admin{% endblock %}
+{% block nav %}<a href="/l/{{ league.slug }}">{{ league.name }}</a> <a href="/l/{{ league.slug }}/fields">Sleeper fields</a>{% endblock %}
+{% block content %}
+<h1>{{ league.name }}</h1>
+<p class="muted">{{ counts.citable_records }} citable records. {{ counts.pending_sources }} sources and
+{{ counts.pending_records }} records need review. Nothing is citable until it is approved.</p>
+<div class="scroll">
+<table data-testid="sources">
+  <tr><th>Source</th><th>Kind</th><th>Date</th><th>Status</th><th>Records</th></tr>
+  {% for item in sources %}{% set s = item.source %}
+  <tr>
+    <td><a href="/l/{{ league.slug }}/s/{{ s.id }}">{{ s.path or s.name }}</a>
+      {% if s.status_reason %}<div class="muted">{{ s.status_reason }}</div>{% endif %}</td>
+    <td>{{ s.kind }}</td>
+    <td>{% if s.effective_date %}{{ s.effective_date }} <span class="muted">({{ s.date_basis }})</span>
+        {% elif s.date_basis == 'undated' %}<span class="muted">undated</span>
+        {% else %}<span class="pending_review">not set</span>{% endif %}</td>
+    <td>{{ pill(s.status) }}</td>
+    <td>{{ item.records | length }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="muted">No documents yet. Run <code>comish sync {{ league.slug }}</code>.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

@@ -10,12 +10,12 @@ from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 
-from commish import intake
-from commish.audit import EventLog
-from commish.config import Settings
-from commish.ratelimit import RateLimiter
-from commish.transport.base import InboundMessage, Transport
-from commish.transport.bluebubbles import parse_webhook
+from comish import intake
+from comish.audit import EventLog
+from comish.config import Settings
+from comish.ratelimit import RateLimiter
+from comish.transport.base import InboundMessage, Transport
+from comish.transport.bluebubbles import parse_webhook
 
 PONG = "pong"
 
@@ -23,7 +23,7 @@ PONG = "pong"
 def create_app(
     settings: Settings, transport: Transport, webhook_token: str, log: EventLog
 ) -> FastAPI:
-    app = FastAPI(title="commish", docs_url=None, redoc_url=None)
+    app = FastAPI(title="comish", docs_url=None, redoc_url=None)
     seen = intake.SeenMessages()
     limiter = RateLimiter(settings.max_per_sender_per_10min, settings.max_outbound_per_day)
 

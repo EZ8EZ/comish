@@ -1,6 +1,6 @@
 """End-to-end: real HTTP servers, real BlueBubblesTransport, fake BlueBubbles.
 
-Runs the commish app under uvicorn, points it at a fake BlueBubbles server that records
+Runs the comish app under uvicorn, points it at a fake BlueBubbles server that records
 sends, then delivers webhooks over real HTTP exactly as BlueBubbles would.
 """
 
@@ -16,10 +16,10 @@ import pytest
 import uvicorn
 from fastapi import FastAPI, Request
 
-from commish.audit import EventLog
-from commish.config import Settings
-from commish.server import create_app
-from commish.transport.bluebubbles import BlueBubblesTransport
+from comish.audit import EventLog
+from comish.config import Settings
+from comish.server import create_app
+from comish.transport.bluebubbles import BlueBubblesTransport
 from tests.fixtures import GROUP_GUID, new_message
 
 PASSWORD = "bb-password"
@@ -90,7 +90,7 @@ def test_webhook_to_pong_over_http(running: Any) -> None:
     app_url, sent, log = running
     hook = f"{app_url}/webhooks/bluebubbles?token={TOKEN}"
 
-    resp = httpx.post(hook, json=new_message("@commish ping", guid="e2e-1"))
+    resp = httpx.post(hook, json=new_message("@comish ping", guid="e2e-1"))
     assert resp.json()["handled"] is True
     wait_for(lambda: len(sent) == 1)
     assert sent[0]["chatGuid"] == GROUP_GUID

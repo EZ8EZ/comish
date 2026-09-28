@@ -1,4 +1,4 @@
-from commish.ratelimit import RateLimiter, SlidingWindow
+from comish.ratelimit import RateLimiter, SlidingWindow
 
 
 class Clock:

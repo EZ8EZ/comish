@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  LaunchAgent (runs in the logged-in `comish` user's session so it can read the Keychain).
+  Install:  cp deploy/launchd/com.comish.server.plist ~/Library/LaunchAgents/
+            launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.comish.server.plist
+  Replace /Users/comish/comish and the chat GUID below before installing.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.comish.server</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/comish/.local/bin/uv</string>
+        <string>run</string>
+        <string>comish</string>
+        <string>serve</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/comish/comish</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>COMISH_BLUEBUBBLES_URL</key>
+        <string>http://127.0.0.1:1234</string>
+        <key>COMISH_SEND_METHOD</key>
+        <string>apple-script</string>
+        <key>COMISH_ALLOWED_CHAT_GUIDS</key>
+        <string>REPLACE_WITH_TEST_GROUP_GUID</string>
+        <key>COMISH_LOG_DIR</key>
+        <string>/Users/comish/comish/logs</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/comish/comish/logs/server.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/comish/comish/logs/server.err.log</string>
+</dict>
+</plist>

@@ -177,7 +177,7 @@ All messaging code sits behind a `Transport` interface, so changing providers do
 ```
 
 ### Data model (per-league `league.db` unless noted)
-- **`leagues`** (ops.db): slug, name, sport (`nfl`|`nba`), current Sleeper league_id, drive_folder_id, chat_guid, commissioner handles (phone/email), created_at.
+- **`leagues`** (ops.db): slug, name, sport (`nfl`|`nba`), current Sleeper league_id, drive_folder_id (nullable), chat_guid, created_at, and `ruling_authority`. `ruling_authority` is either `commissioner` (the handles belong to the league's actual commissioner) or `relay` (the handles belong to a trusted manager who relays rulings from the commissioner, plus the commissioner's name for attribution). There are also flag_handles (phone/email).
 - **`sources`:** id, kind (`gdoc`|`pdf`|`image`|`sleeper`|`ruling`), drive_file_id, filename, drive_modified_time, content_hash, effective_date, date_basis (`in-document`|`comish-set`|`visible-in-image`|`none`), status (`pending_review`|`approved`|`rejected`|`archived`), reviewed_at.
 - **`records`** (the citable units):
   - id (`R-0042`), source_id, record_type (`doc_section`|`vote`|`ruling`|`sleeper_setting`)
@@ -201,7 +201,7 @@ All messaging code sits behind a `Transport` interface, so changing providers do
    - (b) the verifier confirms the newer record explicitly addresses the same rule.
 3. **Superseded records** stay in context, labelled SUPERSEDED, so the model can see the history. Code rejects them as citations.
 4. **An undated record** can't supersede anything and can't be shown to be current. If an undated record is relevant and conflicts with anything, the bot abstains.
-5. **Every reply shows the source's date.** Commissioner rulings are dated records (`Commissioner ruling F17, 2026-10-02`) and take part in rule 2.
+5. **Every reply shows the source's date.** Commissioner rulings are dated records (`Commissioner ruling F17, 2026-10-02`) and take part in rule 2. In a `relay` league the citation names the chain: `Commissioner ruling F17, relayed by EZ8, 2026-10-02`.
 
 ### Answer pipeline details
 - **Retrieval: full context, no RAG.**
@@ -328,7 +328,7 @@ I disagree with building the eval harness *after* the Q&A pipeline. Without the 
 | **2. Eval harness + labeled set** | `cases.yaml` format, runner, grader, report, always-abstain baseline; your real Q&A pairs plus the adversarial set I draft | At least 40 answerable and 40 should-abstain cases labeled and approved by you. The baseline produces a correct report. |
 | **3. Q&A pipeline + commissioner tools** | Context builder, generator, deterministic checks, verifier, renderer, flags/DM commands, rulings, audit, rate limits, `comish ask` CLI | The ship gate in §4 passes 3 runs in a row. Rulings round-trip: flag, then `rule`, then the same question is answered with the ruling cited. |
 | **4. Live in football league** | Bind the real group. **Shadow mode for 2-3 weeks:** the bot posts nothing to the group, DMs you each draft plus citation, and you reply ✅/❌. Then live. | Shadow period with 0 ❌ on answered drafts (each ❌ becomes an eval case, gets fixed and re-gated). Go-live with your sign-off. 2 weeks live with no false answers reported. |
-| **5. Basketball league** | `league add` for the NBA league, its own review, eval set and shadow period. Cross-league leakage tests. | Same gates as Phases 1-4, scoped to basketball. Leakage cases in both leagues abstain 100%. |
+| **5. Basketball league (NSL Fantasy Hoops)** | `league add` with only Sleeper settings (no Drive folder) and `ruling_authority: relay`. Its own eval set, focused on settings questions plus policy questions that must abstain, then a shadow period. Cross-league leakage tests. | Same gates as Phases 1-4, scoped to NSL. The 75% coverage floor applies to settings questions. Every policy question abstains. Leakage cases in both leagues abstain 100%. |
 
 Sleeper NBA note: [certain] the NBA endpoints return data today, but Sleeper's docs still say "only nfl". [likely] NBA support is undocumented and could change. That's a risk, and mitigation is the snapshot plus an alert when a sync fails.
 
@@ -438,10 +438,25 @@ What this changes in Phase 1:
   - The bench went from 11 to 10.
   - A question about "the waiver rules" therefore has to be answered per season, from the right snapshot.
 
+### Basketball league: NSL Fantasy Hoops (decided 2026-09-28)
+**Sleeper (read-only lookup):**
+- The chain is 2026 `1347007735815766016` (currently drafting) → 2025 `1240499656799039488` → 2024 `1120065345508716544` → 2023 `939559419015180288` → 2022 `882658029521240064`, which is the first season.
+- The league: 14 teams, `settings.type` 2 (dynasty), trade deadline week 17, 8 playoff teams, 2 taxi slots, 1 IR slot.
+- Scoring: pts 0.5, reb 1, ast 1, stl 2, blk 2, TO -1.
+- Roster: PG, SG, SF, PF, C, 2 UTIL, 9 bench.
+- [certain] The settings are identical across all five seasons.
+
+**Decisions:**
+- **You are not the NSL commissioner.** Sleeper lists another account as the league owner. The NSL commissioner has agreed to the bot joining the group chat.
+- **You relay rulings.** NSL flags go to you, and you relay rulings from the NSL commissioner. Relayed rulings are labeled as such in every citation, and you remain responsible for relaying them accurately.
+- **The knowledge base is Sleeper settings only for v1.** There's no Drive folder. A folder can be added later if the NSL commissioner wants one, and the ingester treats `drive_folder_id` as optional.
+
+**Consequence:** [likely] most real NSL questions are about policy (tanking, dues, trade vetoes, taxi rules beyond the slot count). Those will abstain and be flagged to you until relayed rulings build up the record. Expect a high abstain rate at first. That's correct behavior, not a bug.
+
 ## 6. Open questions (answer before the phase listed)
 - **Q1: RESOLVED (2026-09-28).** You accepted that on the Gemini free tier Google may use league content to improve its products. The free plan proceeds as written. Cropping names out of screenshots stays optional.
 - **Q2 (Phase 0):** Which exact MacBook model and year, and which macOS version is it on now? This decides whether it's already on Tahoe (bad) and whether the Private API is viable on Intel.
-- **Q3: football resolved, basketball still open.** The football folder was inventoried on 2026-09-28 (see "Football league inventory" below).
+- **Q3: RESOLVED.** The football folder was inventoried on 2026-09-28. NSL Fantasy Hoops has no Drive folder, so v1 uses Sleeper settings only (see "Basketball league" below).
 - **Q4: RESOLVED.** Use a free Google Cloud service account with read-only access. You share both folders with its email.
 - **Q5: RESOLVED, dating is mixed.** Some docs carry dates and some don't. How the ingester handles this is in the Phase 1 detail below.
 - **Q6 (Phase 2):** How many real Q&A pairs can you provide per league, and in what format? A paste or a spreadsheet is fine.

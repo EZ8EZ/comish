@@ -21,6 +21,10 @@ class Settings:
     log_dir: Path = Path("logs")
     # Per-league databases, downloaded files and leagues.yaml. Gitignored.
     data_dir: Path = Path("data")
+    # Free-tier availability changes; check the Gemini pricing page before changing this.
+    gemini_model: str = "gemini-2.5-flash"
+    admin_host: str = "127.0.0.1"
+    admin_port: int = 8788
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -37,6 +41,9 @@ class Settings:
             ),
             log_dir=Path(env.get("COMISH_LOG_DIR", str(cls.log_dir))),
             data_dir=Path(env.get("COMISH_DATA_DIR", str(cls.data_dir))),
+            gemini_model=env.get("COMISH_GEMINI_MODEL", cls.gemini_model),
+            admin_host=env.get("COMISH_ADMIN_HOST", cls.admin_host),
+            admin_port=int(env.get("COMISH_ADMIN_PORT", cls.admin_port)),
         )
 
     @property

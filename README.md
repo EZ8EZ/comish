@@ -69,7 +69,7 @@ flowchart LR
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | iMessage spike: bot joins a group, detects `@comish`, replies `pong` | **Built, awaiting on-device run** |
-| 1 | Ingestion and review: Drive, screenshots, Sleeper, admin review UI | Planned |
+| 1 | Ingestion and review: Drive, screenshots, Sleeper, admin review UI | **Built, awaiting Google setup and first review** |
 | 2 | Eval harness and labeled question set | Planned |
 | 3 | Q&A pipeline with verification, abstention and commissioner tools | Planned |
 | 4 | Live in the football league (shadow mode first) | Planned |
@@ -91,7 +91,8 @@ No Mac, Apple ID or API keys are needed for development. The end-to-end tests ru
 
 ### Deployment (the bot Mac)
 
-Follow [`deploy/macos-setup.md`](deploy/macos-setup.md). It covers creating the bot's Apple Account, preparing the Mac, installing BlueBubbles, binding a test group and running the Phase 0 spike.
+1. [`deploy/macos-setup.md`](deploy/macos-setup.md) covers the bot's Apple Account, preparing the Mac, BlueBubbles, binding a test group and the Phase 0 spike.
+2. [`deploy/google-setup.md`](deploy/google-setup.md) covers the read-only Drive service account, the free Gemini API key, and the first sync and review.
 
 The bot Mac must stay on **macOS 15 Sequoia**: sending into group chats through AppleScript is broken on macOS 26 Tahoe.
 
@@ -103,6 +104,11 @@ The bot Mac must stay on **macOS 15 Sequoia**: sending into group chats through 
 | `comish chats` | List chats and their GUIDs, to pick which ones the bot answers |
 | `comish serve` | Run the webhook server on `127.0.0.1:8787` |
 | `comish spike-report` | Score the event log against the Phase 0 exit criteria |
+| `comish league add` / `league list` | Add a league interactively (Sleeper username or league ID, Drive link, chat), or list them |
+| `comish sync <slug>` | Pull Sleeper settings (every season) and the Drive folder into review, with a per-file report |
+| `comish review-status <slug>` | What's citable, pending review and failed |
+| `comish admin` | Run the review UI on `127.0.0.1:8788` |
+| `comish verify-field <slug> <path>` | Mark a Sleeper field verified (or `--unverify`) |
 
 ## Configuration
 
@@ -111,6 +117,9 @@ The bot Mac must stay on **macOS 15 Sequoia**: sending into group chats through 
 ```bash
 uv run keyring set comish bluebubbles_password
 uv run keyring set comish webhook_token
+uv run keyring set comish admin_password
+uv run keyring set comish gemini_api_key
+# google_service_account_json: see deploy/google-setup.md
 ```
 
 For tests, a `COMISH_<NAME>` environment variable overrides the Keychain.
@@ -125,6 +134,11 @@ For tests, a `COMISH_<NAME>` environment variable overrides the Keychain.
 | `COMISH_MAX_PER_SENDER_PER_10MIN` | `20` | Per-sender question limit |
 | `COMISH_MAX_OUTBOUND_PER_DAY` | `100` | Hard daily cap on bot messages, to protect the Apple ID |
 | `COMISH_LOG_DIR` | `logs` | Where `events.jsonl` is written |
+| `COMISH_DATA_DIR` | `data` | League databases, downloaded screenshots and `leagues.yaml` (gitignored) |
+| `COMISH_GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model for transcription; check the free-tier column before changing |
+| `COMISH_ADMIN_HOST` / `COMISH_ADMIN_PORT` | `127.0.0.1` / `8788` | Where the review UI listens |
+
+**Leagues** live in `data/leagues.yaml`, written by `comish league add`. It's gitignored because it holds chat GUIDs and phone numbers; [`config/leagues.example.yaml`](config/leagues.example.yaml) shows the format.
 
 The trigger is `@comish`, matched case-insensitively as a whole word. The legacy spelling `@commish` also works, so a typo or autocorrect never silently drops a question.
 
@@ -132,6 +146,12 @@ The trigger is `@comish`, matched case-insensitively as a whole word. The legacy
 
 ```
 comish/
+  kb/               per-league SQLite knowledge base and review rules
+  ingest/           Sleeper, Google Drive (docs, PDFs, sheets), dates, screenshots, sync
+  llm/              provider interface and the Gemini provider
+  admin/            commissioner review UI (server-rendered, no JavaScript)
+  commands.py       league add, sync, review status
+  leagues.py        league config
   transport/        messaging adapters (BlueBubbles today, imsg and web fallback later)
   intake.py         decides whether a message is addressed to the bot
   ratelimit.py      per-sender and daily outbound limits
@@ -140,7 +160,8 @@ comish/
   cli.py            command-line entry point
   config.py         non-secret settings from COMISH_* variables
   secrets.py        Keychain-backed secrets
-deploy/             macOS setup guide and launchd agent
+config/             example league config
+deploy/             macOS and Google setup guides, launchd agent
 docs/PLAN.md        design, phases, eval gate, risks
 scripts/            repository checks
 tests/              unit and end-to-end tests
@@ -155,7 +176,7 @@ uv run ruff check .                  # lint
 uv run python scripts/check_text.py  # house style: no em or en dashes
 uv run ruff format --check .         # formatting
 uv run mypy                          # strict type checking
-uv run pytest -q                     # unit and end-to-end tests
+uv run pytest -q                     # unit, end-to-end, and Playwright browser tests
 ```
 
 ## Stack and cost
@@ -166,7 +187,7 @@ Everything in v1 runs on free services, so the recurring cost is $0.
 |---|---|
 | Runtime | Python 3.12, FastAPI, SQLite, launchd, on the bot Mac |
 | iMessage | BlueBubbles Server (free, self-hosted) with a dedicated Apple ID |
-| LLM | Gemini API free tier, behind a provider interface (planned for Phase 1) |
+| LLM | Gemini API free tier, behind a provider interface (screenshot transcription today) |
 | Data | Google Drive via a read-only service account, and the public Sleeper API |
 
 ## Limitations

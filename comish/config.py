@@ -14,6 +14,8 @@ class Settings:
     bluebubbles_url: str = "http://127.0.0.1:1234"
     # "apple-script" (SIP on) or "private-api" (SIP off, BlueBubbles helper installed).
     send_method: str = "apple-script"
+    # "pong" (Phase 0 spike), "shadow" (answers DM'd to the commissioner only) or "live".
+    mode: str = "pong"
     # Only these chat GUIDs are ever answered. Empty means the bot answers nowhere.
     allowed_chat_guids: frozenset[str] = field(default_factory=frozenset)
     max_per_sender_per_10min: int = 20
@@ -34,6 +36,7 @@ class Settings:
         return cls(
             bluebubbles_url=env.get("COMISH_BLUEBUBBLES_URL", cls.bluebubbles_url).rstrip("/"),
             send_method=env.get("COMISH_SEND_METHOD", cls.send_method),
+            mode=env.get("COMISH_MODE", cls.mode),
             allowed_chat_guids=_csv(env.get("COMISH_ALLOWED_CHAT_GUIDS", "")),
             max_per_sender_per_10min=int(
                 env.get("COMISH_MAX_PER_SENDER_PER_10MIN", cls.max_per_sender_per_10min)

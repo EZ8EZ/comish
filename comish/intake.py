@@ -6,6 +6,7 @@ storage or LLM call.
 
 import re
 from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from comish.transport.base import InboundMessage
@@ -67,3 +68,26 @@ def evaluate(
     if not seen.add(msg.guid):
         return IntakeDecision(False, "duplicate")
     return IntakeDecision(True, "mention", strip_mention(msg.text or ""))
+
+
+def evaluate_dm(
+    msg: InboundMessage, is_commissioner: Callable[[str | None], bool], seen: SeenMessages
+) -> IntakeDecision:
+    """A 1:1 message to the bot: only commissioner commands are ever processed."""
+    if msg.is_from_me:
+        return IntakeDecision(False, "from_me")
+    if msg.is_group:
+        return IntakeDecision(False, "not_dm")
+    if msg.is_reaction:
+        return IntakeDecision(False, "reaction")
+    if msg.is_retracted:
+        return IntakeDecision(False, "retracted")
+    if msg.is_system:
+        return IntakeDecision(False, "system")
+    if not is_commissioner(msg.sender):
+        return IntakeDecision(False, "dm_not_commissioner")
+    if not (msg.text or "").strip():
+        return IntakeDecision(False, "empty")
+    if not seen.add(msg.guid):
+        return IntakeDecision(False, "duplicate")
+    return IntakeDecision(True, "commissioner_dm", (msg.text or "").strip())

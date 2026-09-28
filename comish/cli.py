@@ -35,6 +35,7 @@ from comish.secrets import get_secret
 from comish.transport.bluebubbles import BlueBubblesTransport, is_group_chat
 
 if TYPE_CHECKING:
+    from comish.bot import Bot
     from comish.kb.store import LeagueStore
 
 
@@ -70,15 +71,53 @@ async def _chats(settings: Settings) -> None:
         print(f"{bound} {kind} {chat['guid']}\n        {name}: {people}")
 
 
+def _build_bot(settings: Settings) -> "Bot":
+    from comish.bot import Bot
+    from comish.commands import build_pipeline
+    from comish.commissioner.commands import CommissionerDesk
+    from comish.commissioner.ops import OpsStore
+    from comish.kb.store import LeagueStore
+    from comish.leagues import load_leagues
+
+    leagues = load_leagues(settings.leagues_path)
+    unbound = [lg.slug for lg in leagues.values() if not lg.chat_guid]
+    if unbound:
+        print(f"note: leagues without a chat GUID are not answered: {', '.join(unbound)}")
+    stores: dict[str, LeagueStore] = {}
+    pipelines: dict[str, Any] = {}
+
+    def open_store(slug: str) -> LeagueStore:
+        if slug not in stores:
+            stores[slug] = _store(settings, slug)
+        return stores[slug]
+
+    def pipeline_for(slug: str) -> Any:
+        if slug not in pipelines:
+            pipelines[slug] = build_pipeline(settings, leagues[slug], open_store(slug))
+        return pipelines[slug]
+
+    ops = OpsStore(settings.data_dir)
+    desk = CommissionerDesk(leagues, ops, open_store)
+    mode = settings.mode
+    if mode not in ("shadow", "live"):
+        raise SystemExit(f"COMISH_MODE must be pong, shadow or live, not {mode!r}")
+    return Bot(mode, leagues, pipeline_for, open_store, desk, ops)  # type: ignore[arg-type]
+
+
 def _serve(settings: Settings, host: str, port: int) -> None:
     import uvicorn
 
     from comish.server import create_app
 
-    if not settings.allowed_chat_guids:
-        print("warning: COMISH_ALLOWED_CHAT_GUIDS is empty; the bot will answer nowhere")
+    bot = None
+    if settings.mode == "pong":
+        if not settings.allowed_chat_guids:
+            print("warning: COMISH_ALLOWED_CHAT_GUIDS is empty; the bot will answer nowhere")
+    else:
+        bot = _build_bot(settings)
+        print(f"mode {settings.mode}: answering in {len(bot.chat_guids)} league chat(s)")
     app = create_app(
-        settings, _transport(settings), get_secret("webhook_token"), _event_log(settings)
+        settings, _transport(settings), get_secret("webhook_token"), _event_log(settings), bot
     )
     uvicorn.run(app, host=host, port=port)
 

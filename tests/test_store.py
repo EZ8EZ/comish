@@ -210,3 +210,12 @@ def test_leagues_are_isolated(tmp_path):
 def test_invalid_slug_cannot_escape_data_dir(tmp_path):
     with pytest.raises(ValueError):
         LeagueStore(tmp_path, "../other")
+
+
+def test_proposal_never_overrides_approved_or_commissioner_dates(store):
+    source = _doc(store)
+    assert store.propose_source_date(source.id, "2025-01-01")
+    store.approve_source(source.id)
+    assert not store.propose_source_date(source.id, "2026-01-01")
+    assert store.get_source(source.id).effective_date == "2025-01-01"
+    assert store.propose_source_date(source.id, "2025-01-01")  # same date is fine

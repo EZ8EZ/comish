@@ -158,12 +158,11 @@ class DriveSync:
             for s in split_markdown(doc_name, markdown)
         ]
         changes = self.store.replace_records(source_id, records)
+        detail = f"{len(records)} sections"
         found = document_date(markdown)
-        if found:
-            self.store.propose_source_date(source_id, found)
-        return FileResult(
-            f.path, "gdoc", _status(is_new, changes, changed), f"{len(records)} sections"
-        )
+        if found and not self.store.propose_source_date(source_id, found):
+            detail += f"; the document now says {found}, review its date"
+        return FileResult(f.path, "gdoc", _status(is_new, changes, changed), detail)
 
     def _sync_sheet(self, f: d.DriveFile) -> FileResult:
         rows = parse_workbook(f.name, self.client.export(f.id, d.XLSX))
@@ -185,10 +184,10 @@ class DriveSync:
         source_id, is_new, changed = self._upsert(f, "pdf", f.md5 or _sha(data))
         records = [NewRecord("doc_section", f"{f.name} > page {n}", text) for n, text in pdf.pages]
         changes = self.store.replace_records(source_id, records)
-        found = document_date(pdf.pages[0][1])
-        if found:
-            self.store.propose_source_date(source_id, found)
         detail = f"{len(records)} pages"
+        found = document_date(pdf.pages[0][1])
+        if found and not self.store.propose_source_date(source_id, found):
+            detail += f"; the document now says {found}, review its date"
         if pdf.empty_pages:
             detail += f"; no text on pages {pdf.empty_pages} (not ingested)"
         return FileResult(f.path, "pdf", _status(is_new, changes, changed), detail)

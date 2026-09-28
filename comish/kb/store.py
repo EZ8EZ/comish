@@ -256,15 +256,29 @@ class LeagueStore:
             sql += " AND status != 'archived'"
         return [_source(r) for r in self._query(sql + " ORDER BY path, name", params)]
 
-    def propose_source_date(self, source_id: int, date: str) -> None:
-        """Record a date found in the document itself; the commissioner confirms on approval."""
+    def propose_source_date(self, source_id: int, date: str) -> bool:
+        """Record a date found in the document itself; the commissioner confirms on approval.
+
+        Never changes an approved source or a date the commissioner set. Returns False
+        when the proposal differs from the current date but wasn't applied, so the sync
+        can tell the commissioner to look.
+        """
         date = validate_date(date)
         with self._tx() as db:
+            row = db.execute(
+                "SELECT effective_date, date_basis, status FROM sources WHERE id = ?",
+                (source_id,),
+            ).fetchone()
+            if row is None or row["effective_date"] == date:
+                return True
+            if row["status"] == "approved" or row["date_basis"] not in ("none", "in-document"):
+                return False
             db.execute(
-                """UPDATE sources SET effective_date = ?, date_basis = 'in-document', updated_at = ?
-                   WHERE id = ? AND date_basis IN ('none', 'in-document')""",
+                """UPDATE sources SET effective_date = ?, date_basis = 'in-document',
+                   updated_at = ? WHERE id = ?""",
                 (date, now_iso(), source_id),
             )
+            return True
 
     def set_source_date(self, source_id: int, date: str) -> None:
         date = validate_date(date)

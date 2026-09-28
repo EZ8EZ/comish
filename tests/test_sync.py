@@ -193,3 +193,15 @@ def test_walk_handles_nesting_and_cycles():
     fake.children["b"].append({"id": "a", "name": "A-again", "mimeType": d.FOLDER})
     fake.add_file("b", "f", "deep.png", "image/png", {"raw": b""})
     assert [f.path for f in d.walk(fake, "root")] == ["A/B/deep.png"]
+
+
+def test_approved_doc_date_is_never_changed_by_sync(store, drive):
+    DriveSync(store, drive, fake_transcribe).run("root")
+    doc = store.source_by_external_id("doc1")
+    store.approve_source(doc.id)
+    bumped = CONSTITUTION.replace(b"2025-02-01", b"2026-03-01")
+    drive.add_file("root", "doc1", "Constitution", d.GDOC, {d.MARKDOWN: bumped})
+    report = DriveSync(store, drive, fake_transcribe).run("root")
+    result = next(f for f in report.files if f.path == "Constitution")
+    assert "the document now says 2026-03-01, review its date" in result.detail
+    assert store.get_source(doc.id).effective_date == "2025-02-01"

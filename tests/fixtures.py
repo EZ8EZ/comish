@@ -5,7 +5,7 @@ OTHER_GROUP_GUID = "iMessage;+;chat600000000000000002"
 
 
 def new_message(
-    text: str | None = "@commish ping",
+    text: str | None = "@comish ping",
     guid: str = "msg-1",
     chat_guid: str = GROUP_GUID,
     sender: str = "+15555550101",

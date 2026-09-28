@@ -1,9 +1,9 @@
-"""commish CLI (Phase 0).
+"""comish CLI (Phase 0).
 
-commish bb-ping          check BlueBubbles is reachable and the password works
-commish chats            list chats with GUIDs, to pick COMMISH_ALLOWED_CHAT_GUIDS
-commish serve            run the webhook server (pong spike)
-commish spike-report     summarize logs/events.jsonl against the Phase 0 exit criteria
+comish bb-ping          check BlueBubbles is reachable and the password works
+comish chats            list chats with GUIDs, to pick COMISH_ALLOWED_CHAT_GUIDS
+comish serve            run the webhook server (pong spike)
+comish spike-report     summarize logs/events.jsonl against the Phase 0 exit criteria
 """
 
 import argparse
@@ -13,10 +13,10 @@ import sys
 from collections import Counter
 from typing import Any
 
-from commish.audit import EventLog
-from commish.config import Settings
-from commish.secrets import get_secret
-from commish.transport.bluebubbles import BlueBubblesTransport, is_group_chat
+from comish.audit import EventLog
+from comish.config import Settings
+from comish.secrets import get_secret
+from comish.transport.bluebubbles import BlueBubblesTransport, is_group_chat
 
 
 def _transport(settings: Settings) -> BlueBubblesTransport:
@@ -54,10 +54,10 @@ async def _chats(settings: Settings) -> None:
 def _serve(settings: Settings, host: str, port: int) -> None:
     import uvicorn
 
-    from commish.server import create_app
+    from comish.server import create_app
 
     if not settings.allowed_chat_guids:
-        print("warning: COMMISH_ALLOWED_CHAT_GUIDS is empty; the bot will answer nowhere")
+        print("warning: COMISH_ALLOWED_CHAT_GUIDS is empty; the bot will answer nowhere")
     app = create_app(
         settings, _transport(settings), get_secret("webhook_token"), _event_log(settings)
     )
@@ -82,7 +82,7 @@ def spike_report(events: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="commish")
+    parser = argparse.ArgumentParser(prog="comish")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("bb-ping")
     sub.add_parser("chats")

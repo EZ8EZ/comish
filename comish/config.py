@@ -1,4 +1,4 @@
-"""Non-secret runtime settings, read from COMMISH_* environment variables."""
+"""Non-secret runtime settings, read from COMISH_* environment variables."""
 
 import os
 from dataclasses import dataclass, field
@@ -24,14 +24,14 @@ class Settings:
     def from_env(cls) -> "Settings":
         env = os.environ
         return cls(
-            bluebubbles_url=env.get("COMMISH_BLUEBUBBLES_URL", cls.bluebubbles_url).rstrip("/"),
-            send_method=env.get("COMMISH_SEND_METHOD", cls.send_method),
-            allowed_chat_guids=_csv(env.get("COMMISH_ALLOWED_CHAT_GUIDS", "")),
+            bluebubbles_url=env.get("COMISH_BLUEBUBBLES_URL", cls.bluebubbles_url).rstrip("/"),
+            send_method=env.get("COMISH_SEND_METHOD", cls.send_method),
+            allowed_chat_guids=_csv(env.get("COMISH_ALLOWED_CHAT_GUIDS", "")),
             max_per_sender_per_10min=int(
-                env.get("COMMISH_MAX_PER_SENDER_PER_10MIN", cls.max_per_sender_per_10min)
+                env.get("COMISH_MAX_PER_SENDER_PER_10MIN", cls.max_per_sender_per_10min)
             ),
             max_outbound_per_day=int(
-                env.get("COMMISH_MAX_OUTBOUND_PER_DAY", cls.max_outbound_per_day)
+                env.get("COMISH_MAX_OUTBOUND_PER_DAY", cls.max_outbound_per_day)
             ),
-            log_dir=Path(env.get("COMMISH_LOG_DIR", str(cls.log_dir))),
+            log_dir=Path(env.get("COMISH_LOG_DIR", str(cls.log_dir))),
         )

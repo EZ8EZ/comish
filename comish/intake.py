@@ -1,6 +1,6 @@
 """Decide whether an inbound message is addressed to the bot.
 
-Everything not addressed to @commish in a bound chat is dropped here, before any
+Everything not addressed to @comish in a bound chat is dropped here, before any
 storage or LLM call.
 """
 
@@ -8,10 +8,11 @@ import re
 from collections import OrderedDict
 from dataclasses import dataclass
 
-from commish.transport.base import InboundMessage
+from comish.transport.base import InboundMessage
 
-# "@commish" as a whole word: not "@commishbot", not "email@commish.com".
-MENTION_RE = re.compile(r"(?<![\w@.])@commish(?![\w@])", re.IGNORECASE)
+# "@comish" as a whole word: not "@comishbot", not "email@comish.com". The legacy
+# spelling "@commish" also triggers, so a typo or autocorrect never drops a question.
+MENTION_RE = re.compile(r"(?<![\w@.])@comm?ish(?![\w@])", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -50,7 +51,7 @@ def evaluate(
     msg: InboundMessage, allowed_chat_guids: frozenset[str], seen: SeenMessages
 ) -> IntakeDecision:
     # Order matters: cheapest, most common rejections first. The bot's own messages are
-    # rejected before anything else so a reply containing "@commish" can never loop.
+    # rejected before anything else so a reply containing "@comish" can never loop.
     if msg.is_from_me:
         return IntakeDecision(False, "from_me")
     if msg.chat_guid not in allowed_chat_guids:

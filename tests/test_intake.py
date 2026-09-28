@@ -1,7 +1,7 @@
 import pytest
 
-from commish import intake
-from commish.transport.bluebubbles import parse_webhook
+from comish import intake
+from comish.transport.bluebubbles import parse_webhook
 from tests.fixtures import GROUP_GUID, OTHER_GROUP_GUID, new_message
 
 ALLOWED = frozenset({GROUP_GUID})
@@ -10,12 +10,14 @@ ALLOWED = frozenset({GROUP_GUID})
 @pytest.mark.parametrize(
     "text",
     [
+        "@comish ping",
+        "@Comish what's the taxi deadline?",
+        "hey @COMISH, quick one",
+        "question for @comish?",
+        "(@comish) trade deadline",
+        "@comish\nmultiline",
         "@commish ping",
-        "@Commish what's the taxi deadline?",
-        "hey @COMMISH, quick one",
-        "question for @commish?",
-        "(@commish) trade deadline",
-        "@commish\nmultiline",
+        "@Commish what is the waiver type?",
     ],
 )
 def test_mention_matches(text):
@@ -27,12 +29,15 @@ def test_mention_matches(text):
     [
         None,
         "",
-        "commish ping",
+        "comish ping",
+        "@comishbot ping",
+        "@comish_ ping",
         "@commishbot ping",
-        "@commish_ ping",
-        "email me at bot@commish.com",
-        "ask the commish",
-        "@ commish",
+        "@comiish ping",
+        "bot@commish.com",
+        "email me at bot@comish.com",
+        "ask the comish",
+        "@ comish",
     ],
 )
 def test_mention_rejects(text):
@@ -40,9 +45,10 @@ def test_mention_rejects(text):
 
 
 def test_strip_mention():
-    assert intake.strip_mention("@commish  what is the  trade deadline?") == (
+    assert intake.strip_mention("@comish  what is the  trade deadline?") == (
         "what is the trade deadline?"
     )
+    assert intake.strip_mention("@Commish taxi rules?") == "taxi rules?"
 
 
 def _evaluate(payload, seen=None):
@@ -50,7 +56,7 @@ def _evaluate(payload, seen=None):
 
 
 def test_handles_mention_in_bound_group():
-    decision = _evaluate(new_message("@commish ping"))
+    decision = _evaluate(new_message("@comish ping"))
     assert decision.handle
     assert decision.question == "ping"
 
@@ -58,12 +64,12 @@ def test_handles_mention_in_bound_group():
 @pytest.mark.parametrize(
     "payload,reason",
     [
-        (new_message("@commish ping", isFromMe=True), "from_me"),
-        (new_message("@commish ping", chat_guid=OTHER_GROUP_GUID), "unbound_chat"),
-        (new_message("@commish ping", associatedMessageType=2000), "reaction"),
-        (new_message("@commish ping", associatedMessageType="love"), "reaction"),
-        (new_message("@commish ping", dateRetracted=1_780_000_000_500), "retracted"),
-        (new_message("@commish ping", itemType=1), "system"),
+        (new_message("@comish ping", isFromMe=True), "from_me"),
+        (new_message("@comish ping", chat_guid=OTHER_GROUP_GUID), "unbound_chat"),
+        (new_message("@comish ping", associatedMessageType=2000), "reaction"),
+        (new_message("@comish ping", associatedMessageType="love"), "reaction"),
+        (new_message("@comish ping", dateRetracted=1_780_000_000_500), "retracted"),
+        (new_message("@comish ping", itemType=1), "system"),
         (new_message("hello league"), "no_mention"),
         (new_message(None, attachments=[{"guid": "att-1"}]), "no_mention"),
     ],
@@ -75,7 +81,7 @@ def test_ignores(payload, reason):
 
 
 def test_bot_reply_containing_mention_never_loops():
-    decision = _evaluate(new_message("pong — ask @commish anytime", isFromMe=True))
+    decision = _evaluate(new_message("pong, ask @comish anytime", isFromMe=True))
     assert decision.reason == "from_me"
 
 

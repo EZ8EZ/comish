@@ -1,9 +1,9 @@
 from fastapi.testclient import TestClient
 
-from commish.audit import EventLog
-from commish.cli import spike_report
-from commish.config import Settings
-from commish.server import create_app
+from comish.audit import EventLog
+from comish.cli import spike_report
+from comish.config import Settings
+from comish.server import create_app
 from tests.fixtures import GROUP_GUID, new_message
 
 TOKEN = "hook-token"
@@ -40,7 +40,7 @@ def test_rejects_bad_token(tmp_path):
 
 def test_pong_for_mention(tmp_path):
     client, transport, log = _client(tmp_path)
-    resp = _post(client, new_message("@commish ping"))
+    resp = _post(client, new_message("@comish ping"))
     assert resp.json() == {"handled": True, "reason": "mention"}
     assert transport.sent == [(GROUP_GUID, "pong")]
     events = [e["event"] for e in log.read()]

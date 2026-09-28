@@ -1,9 +1,17 @@
 [project]
-name = "commish"
-version = "0.0.1"
-description = "Commish Bot: a citation-only rules assistant for dynasty league iMessage group chats"
+name = "comish"
+version = "0.1.0"
+description = "A citation-only rules assistant for dynasty fantasy league iMessage group chats"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
+keywords = ["fantasy-football", "fantasy-basketball", "sleeper", "imessage", "bluebubbles", "llm"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Private :: Do Not Upload",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: MacOS",
+    "Framework :: FastAPI",
+]
 dependencies = [
     "fastapi>=0.110",
     "uvicorn>=0.29",
@@ -12,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-commish = "commish.cli:main"
+comish = "comish.cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.11"]
@@ -26,7 +34,7 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "ASYNC", "S"]
@@ -34,10 +42,11 @@ ignore = ["RUF001", "RUF002", "RUF003"]  # allow typographic punctuation in stri
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106"]  # asserts and fake secrets are fine in tests
+"scripts/**" = ["S603", "S607"]  # dev scripts call git from PATH
 
 [tool.mypy]
-python_version = "3.11"
-packages = ["commish"]
+python_version = "3.12"
+packages = ["comish"]
 strict = true
 warn_unreachable = true
 

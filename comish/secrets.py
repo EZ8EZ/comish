@@ -2,16 +2,16 @@
 
 Secrets never live in the repo or in .env. On the bot Mac, store them with:
 
-    keyring set commish bluebubbles_password
+    keyring set comish bluebubbles_password
 
-For tests or one-off runs, COMMISH_<NAME> in the environment overrides the Keychain.
+For tests or one-off runs, COMISH_<NAME> in the environment overrides the Keychain.
 """
 
 import os
 
 import keyring
 
-KEYRING_SERVICE = "commish"
+KEYRING_SERVICE = "comish"
 
 
 class MissingSecret(RuntimeError):
@@ -19,7 +19,7 @@ class MissingSecret(RuntimeError):
 
 
 def get_secret(name: str) -> str:
-    value = os.environ.get(f"COMMISH_{name.upper()}")
+    value = os.environ.get(f"COMISH_{name.upper()}")
     if not value:
         try:
             value = keyring.get_password(KEYRING_SERVICE, name)

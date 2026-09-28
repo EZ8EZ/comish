@@ -4,7 +4,7 @@ import json
 import httpx
 import pytest
 
-from commish.transport.bluebubbles import (
+from comish.transport.bluebubbles import (
     BlueBubblesError,
     BlueBubblesTransport,
     is_group_chat,
@@ -14,12 +14,12 @@ from tests.fixtures import GROUP_GUID, new_message
 
 
 def test_parse_group_message():
-    msg = parse_webhook(new_message("@commish ping", sender="+15555550199"))
+    msg = parse_webhook(new_message("@comish ping", sender="+15555550199"))
     assert msg.guid == "msg-1"
     assert msg.chat_guid == GROUP_GUID
     assert msg.is_group
     assert msg.sender == "+15555550199"
-    assert msg.text == "@commish ping"
+    assert msg.text == "@comish ping"
     assert msg.sent_at_ms == 1_780_000_000_000
     assert not (msg.is_from_me or msg.is_reaction or msg.is_retracted or msg.is_system)
 
@@ -44,7 +44,7 @@ def test_own_message_has_no_sender():
         ({"guid": "iMessage;+;chat123", "style": 43}, True),
         ({"guid": "any;+;chat123"}, True),
         ({"guid": "iMessage;-;+15555550101", "style": 45}, False),
-        ({"guid": "any;-;commish.bot@example.com"}, False),
+        ({"guid": "any;-;comish.bot@example.com"}, False),
     ],
 )
 def test_is_group_chat(chat, expected):
@@ -74,7 +74,7 @@ def test_send_text_request_shape():
     assert seen["body"]["chatGuid"] == GROUP_GUID
     assert seen["body"]["message"] == "pong"
     assert seen["body"]["method"] == "apple-script"
-    assert seen["body"]["tempGuid"].startswith("commish-")
+    assert seen["body"]["tempGuid"].startswith("comish-")
 
 
 def test_send_text_raises_on_error():

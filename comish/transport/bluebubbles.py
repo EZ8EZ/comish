@@ -10,7 +10,7 @@ from typing import Any
 
 import httpx
 
-from commish.transport.base import InboundMessage
+from comish.transport.base import InboundMessage
 
 NEW_MESSAGE = "new-message"
 GROUP_CHAT_STYLE = 43  # chat.db style for group chats (45 = 1:1)
@@ -86,7 +86,7 @@ class BlueBubblesTransport:
             "message/text",
             json={
                 "chatGuid": chat_guid,
-                "tempGuid": f"commish-{uuid.uuid4()}",
+                "tempGuid": f"comish-{uuid.uuid4()}",
                 "message": text,
                 "method": self._send_method,
             },

@@ -515,6 +515,10 @@ class LeagueStore:
                 "SELECT content_hash FROM sleeper_snapshots WHERE league_id = ?", (league_id,)
             ).fetchone()
             if row is not None and row["content_hash"] == digest:
+                db.execute(
+                    "UPDATE sleeper_snapshots SET fetched_at = ? WHERE league_id = ?",
+                    (now_iso(), league_id),
+                )
                 return False
             db.execute(
                 """INSERT OR REPLACE INTO sleeper_snapshots

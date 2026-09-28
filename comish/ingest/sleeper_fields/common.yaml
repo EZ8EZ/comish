@@ -1,0 +1,118 @@
+# Sleeper league settings shared by every sport.
+#
+# kind: int | week | days | bool | money | enum | points | slots
+# meaning: official (Sleeper docs) or community (inferred from community code and
+#   observed data). Every field needs commissioner verification before it is citable,
+#   whatever its meaning source.
+# app_enforced: true when the Sleeper app itself enforces the value; those values win
+#   over league documents (precedence rule 1).
+fields:
+  - path: settings.type
+    label: League type
+    kind: enum
+    values: {0: redraft, 1: keeper, 2: dynasty}
+    meaning: community
+    app_enforced: true
+  - path: settings.num_teams
+    label: Number of teams
+    kind: int
+    meaning: community
+    app_enforced: true
+  - path: settings.trade_deadline
+    label: Trade deadline
+    kind: week
+    note: A very large value may mean "no deadline"; not confirmed.
+    meaning: community
+    app_enforced: true
+  - path: settings.trade_review_days
+    label: Trade review period
+    kind: days
+    meaning: community
+    app_enforced: true
+  - path: settings.disable_trades
+    label: Trades disabled
+    kind: bool
+    meaning: community
+    app_enforced: true
+  - path: settings.pick_trading
+    label: Draft pick trading allowed
+    kind: bool
+    meaning: community
+    app_enforced: true
+  - path: settings.veto_votes_needed
+    label: Votes needed to veto a trade
+    kind: int
+    meaning: community
+    app_enforced: true
+  - path: settings.waiver_type
+    label: Waiver type
+    kind: enum
+    values: {0: rolling waivers, 1: reverse standings, 2: FAAB bidding}
+    meaning: community
+    app_enforced: true
+  - path: settings.waiver_budget
+    label: FAAB budget per team
+    kind: money
+    note: Present even in leagues that do not use FAAB.
+    meaning: community
+    app_enforced: true
+  - path: settings.waiver_bid_min
+    label: Minimum FAAB bid
+    kind: money
+    meaning: community
+    app_enforced: true
+  - path: settings.waiver_clear_days
+    label: Days before a dropped player clears waivers
+    kind: days
+    meaning: community
+    app_enforced: true
+  - path: settings.playoff_teams
+    label: Playoff teams
+    kind: int
+    meaning: community
+    app_enforced: true
+  - path: settings.playoff_week_start
+    label: Playoffs start
+    kind: week
+    meaning: community
+    app_enforced: true
+  - path: settings.start_week
+    label: Season starts
+    kind: week
+    meaning: community
+    app_enforced: true
+  - path: settings.draft_rounds
+    label: Draft rounds
+    kind: int
+    meaning: community
+    app_enforced: true
+  - path: settings.taxi_slots
+    label: Taxi squad slots
+    kind: int
+    meaning: community
+    app_enforced: true
+  - path: settings.taxi_years
+    label: Taxi squad eligibility (player's first N seasons)
+    kind: int
+    meaning: community
+    app_enforced: true
+  - path: settings.taxi_allow_vets
+    label: Veterans allowed on taxi squad
+    kind: bool
+    meaning: community
+    app_enforced: true
+  - path: settings.reserve_slots
+    label: Injured reserve slots
+    kind: int
+    meaning: community
+    app_enforced: true
+  - path: settings.league_average_match
+    label: Extra matchup against the league median each week
+    kind: bool
+    meaning: community
+    app_enforced: true
+  - path: roster_positions
+    label: Roster slots
+    kind: slots
+    meaning: official
+    app_enforced: true

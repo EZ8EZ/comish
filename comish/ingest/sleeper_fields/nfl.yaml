@@ -1,0 +1,41 @@
+# Sleeper NFL scoring settings (added to common.yaml). See common.yaml for the format.
+fields:
+  - {path: scoring_settings.pass_yd, label: Points per passing yard, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.pass_td, label: Points per passing TD, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.pass_int, label: Points per interception thrown, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.pass_2pt, label: Points per passing 2-point conversion, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.pass_fd, label: Points per passing first down, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.bonus_pass_yd_300, label: Bonus for a 300-399 yard passing game, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.bonus_pass_yd_400, label: Bonus for a 400+ yard passing game, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rush_yd, label: Points per rushing yard, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rush_td, label: Points per rushing TD, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rush_2pt, label: Points per rushing 2-point conversion, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rush_fd, label: Points per rushing first down, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.bonus_rush_yd_100, label: Bonus for a 100-199 yard rushing game, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.bonus_rush_yd_200, label: Bonus for a 200+ yard rushing game, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rec, label: Points per reception, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rec_yd, label: Points per receiving yard, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rec_td, label: Points per receiving TD, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rec_2pt, label: Points per receiving 2-point conversion, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rec_fd, label: Points per receiving first down, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.bonus_rec_te, label: Extra points per reception for tight ends, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.bonus_rec_rb, label: Extra points per reception for running backs, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.bonus_rec_wr, label: Extra points per reception for wide receivers, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.bonus_rec_yd_100, label: Bonus for a 100-199 yard receiving game, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.bonus_rec_yd_200, label: Bonus for a 200+ yard receiving game, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.fum, label: Points per fumble, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.fum_lost, label: Points per fumble lost, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.xpm, label: Points per extra point made, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.xpmiss, label: Points per extra point missed, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.fgm_0_19, label: Points per field goal made (0-19 yards), kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.fgm_20_29, label: Points per field goal made (20-29 yards), kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.fgm_30_39, label: Points per field goal made (30-39 yards), kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.fgm_40_49, label: Points per field goal made (40-49 yards), kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.fgm_50p, label: Points per field goal made (50+ yards), kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.fgmiss, label: Points per field goal missed, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.def_td, label: Points per defensive TD, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.sack, label: Points per sack (team defense), kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.int, label: Points per interception (team defense), kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.fum_rec, label: Points per fumble recovery (team defense), kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.safe, label: Points per safety, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.pts_allow_0, label: Points when the defense allows 0 points, kind: points, meaning: community, app_enforced: true}

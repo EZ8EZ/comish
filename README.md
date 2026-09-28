@@ -75,7 +75,7 @@ flowchart LR
 | 4 | Live in the football league (shadow mode first) | Planned |
 | 5 | Second league (basketball) | Planned |
 
-The full design, exit criteria and risk register are in [`docs/PLAN.md`](docs/PLAN.md).
+The full design, exit criteria and risk register are in [`docs/PLAN.md`](docs/PLAN.md). Recommended GitHub settings (branch ruleset, secret scanning) are in [`docs/REPO_SETTINGS.md`](docs/REPO_SETTINGS.md).
 
 ## Getting started
 

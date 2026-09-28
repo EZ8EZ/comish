@@ -418,11 +418,30 @@ Phase 1 can be built while you run the Phase 0 spike, because ingestion doesn't 
 2. Share both league folders with the service account's email as **Viewer**.
 3. Create a free Gemini API key in AI Studio, with no billing attached, then run `keyring set comish gemini_api_key`.
 
+### Football league inventory (read-only, 2026-09-28)
+**Drive folder "Dynasty Pigskin":**
+- 2 Google Docs: *Dynasty Pigskin Constitution* and *Dues Tracker 2026-27*
+- 1 Google Sheet: *League Tracker*
+- 6 screenshots: `IMG_2740`, `IMG_7520`, `IMG_3958`, `IMG_3959`, `IMG_3961`, `IMG_3962`
+- 1 subfolder: `24-25`
+
+What this changes in Phase 1:
+- **Google Sheets:** the ingester needs a CSV export path for them, with each row kept as a citable record that carries its sheet and row number.
+- **Dues:** they're money questions. They stay in scope only as cited records, and anything involving amounts owed abstains unless it's quoted verbatim.
+
+**Sleeper (user `ez8`, league "Dynasty Pigskin"):**
+- The chain is 2026 `1337295332056244224` → 2025 `1181733455967277056` → 2024 `1045732785681563648`, which is the first season.
+- The league: 12 teams, `settings.type` 2 (dynasty), trade deadline week 11, 7 playoff teams, 2 taxi slots, 1 IR slot, 0.5 points per reception.
+- The chain already shows why history matters. From 2024 to 2025:
+  - `waiver_type` changed from 0 to 2. [likely] That's rolling waivers to FAAB, a meaning taken from community sources, so you must verify it before it becomes citable.
+  - The DEF roster slot was removed.
+  - The bench went from 11 to 10.
+  - A question about "the waiver rules" therefore has to be answered per season, from the right snapshot.
+
 ## 6. Open questions (answer before the phase listed)
 - **Q1: RESOLVED (2026-09-28).** You accepted that on the Gemini free tier Google may use league content to improve its products. The free plan proceeds as written. Cropping names out of screenshots stays optional.
 - **Q2 (Phase 0):** Which exact MacBook model and year, and which macOS version is it on now? This decides whether it's already on Tahoe (bad) and whether the Private API is viable on Intel.
-- **Q3 (Phase 1):** The two Drive folder links. I can inventory them read-only up front to size the corpus and file types.
-- **Q3 is still open:** you'll share the links before Phase 1 ingestion runs against real data. The code can be built and tested on fixtures first.
+- **Q3: football resolved, basketball still open.** The football folder was inventoried on 2026-09-28 (see "Football league inventory" below).
 - **Q4: RESOLVED.** Use a free Google Cloud service account with read-only access. You share both folders with its email.
 - **Q5: RESOLVED, dating is mixed.** Some docs carry dates and some don't. How the ingester handles this is in the Phase 1 detail below.
 - **Q6 (Phase 2):** How many real Q&A pairs can you provide per league, and in what format? A paste or a spreadsheet is fine.

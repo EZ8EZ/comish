@@ -10,7 +10,7 @@ The repo is empty apart from a README, so nothing existing can be reused. This p
 - **Hardware:** your 2018 or 2019 Intel MacBook Pro for v1.
 - **Budget: build v1 on free services only ($0/mo).** The earlier $25/mo cap is removed. Every component is on a free tier: BlueBubbles, Google Drive service account, Sleeper API, Tailscale, Cloudflare Tunnel and the Gemini API free tier. Paid upgrades are listed as options, never defaults.
 - **LLM provider:** the Gemini API free tier, because it's the only free option that can do the job (reasons in §2). The LLM sits behind a provider interface, so moving to a paid provider (Claude) later is a config change, not a rewrite.
-- **v1 scope:** rules, votes, rulings and Sleeper *settings* only. Roster, pick and transaction lookups wait for v2.
+- **v1 scope:** rules, votes, rulings and Sleeper *settings*, then **league history** (Phase 3b; added 2026-09-28): past brackets and matchups, top scorers, trades, draft results, and when settings changed. *Live* roster and pick lookups ("who owns my 2027 1st?") still wait for v2.
 - **Screenshots:** every transcription needs your approval before it can be cited.
 - **Rollout:** shadow mode before going live.
 - **Volume:** under 30 questions a month in total. Corpus is 10-50 files per league.
@@ -327,6 +327,7 @@ I disagree with building the eval harness *after* the Q&A pipeline. Without the 
 | **1. Ingestion + review (football league)** | Project skeleton, config, Keychain secrets, `comish league add` CLI (Sleeper username → pick league, or league ID; Drive link; chat binding from the BlueBubbles chat list), Drive sync, doc sectioning, PDF text, 2-pass image transcription, Sleeper chain walk and snapshots, field dictionary, admin review UI | Every Drive file is accounted for (ingested, or skipped with a reason). Every image has 2 transcriptions and sits in the queue. You've reviewed and approved the backlog and set doc dates. The Sleeper chain is walked back to the first season. The field dictionary is verified by you against the Sleeper app. Re-sync is idempotent (a second run changes nothing). |
 | **2. Eval harness + labeled set** | `cases.yaml` format, runner, grader, report, always-abstain baseline; your real Q&A pairs plus the adversarial set I draft | At least 40 answerable and 40 should-abstain cases labeled and approved by you. The baseline produces a correct report. |
 | **3. Q&A pipeline + commissioner tools** | Context builder, generator, deterministic checks, verifier, renderer, flags/DM commands, rulings, audit, rate limits, `comish ask` CLI | The ship gate in §4 passes 3 runs in a row. Rulings round-trip: flag, then `rule`, then the same question is answered with the ruling cited. |
+| **3b. League history** | Deterministic history facts from Sleeper, computed in code and stored as citable records (see §5c). A history eval set gets its own gate. | 0 false answers on history cases across 3 runs. Every numeric fact is recomputed from the raw snapshot in a test. Ownership as of each season is verified on every league's chain. |
 | **4. Live in football league** | Bind the real group. **Shadow mode for 2-3 weeks:** the bot posts nothing to the group, DMs you each draft plus citation, and you reply ✅/❌. Then live. | Shadow period with 0 ❌ on answered drafts (each ❌ becomes an eval case, gets fixed and re-gated). Go-live with your sign-off. 2 weeks live with no false answers reported. |
 | **5. Basketball league (NSL Fantasy Hoops)** | `league add` with only Sleeper settings (no Drive folder) and `ruling_authority: relay`. Its own eval set, focused on settings questions plus policy questions that must abstain, then a shadow period. Cross-league leakage tests. | Same gates as Phases 1-4, scoped to NSL. The 75% coverage floor applies to settings questions. Every policy question abstains. Leakage cases in both leagues abstain 100%. |
 
@@ -452,6 +453,45 @@ What this changes in Phase 1:
 - **The knowledge base is Sleeper settings only for v1.** There's no Drive folder. A folder can be added later if the NSL commissioner wants one, and the ingester treats `drive_folder_id` as optional.
 
 **Consequence:** [likely] most real NSL questions are about policy (tanking, dues, trade vetoes, taxi rules beyond the slot count). Those will abstain and be flagged to you until relayed rulings build up the record. Expect a high abstain rate at first. That's correct behavior, not a bug.
+
+## 5c. League history (Phase 3b)
+Managers want quick answers to questions that are buried in the Sleeper app, like "what were the semifinal matchups two years ago?", "who was the highest-scoring player on each team?" or "when did we switch to FAAB?".
+
+**Principle: code computes, the LLM only looks up.**
+- Past seasons are immutable, so every history fact is computed deterministically from saved Sleeper snapshots and stored as an ordinary citable record.
+- The answer pipeline, the deterministic checks and the verifier stay exactly as they are. There's no new path that could produce an uncited number.
+
+**Data** ([certain] verified available on 2024 Dynasty Pigskin):
+- `winners_bracket` and `losers_bracket` per season. They give round, matchup, winner and loser, which is enough for the championship, the semifinals and placement games.
+- `matchups/<week>`: team points, plus `starters` and `starters_points` per player. A starter slot of `"0"` means an empty slot, and it's counted as such, never as a player.
+- `transactions/<week>`: trades, waivers and free agents, with millisecond `created` timestamps.
+- `drafts` and `draft/<id>/picks`: rookie and startup draft results.
+- `rosters` and `users`: team names and owners.
+- `/players/<sport>`: player names. It's about 15 MB, so it's fetched at most once a day and cached locally.
+
+**Fact records generated per season:**
+- Final standings, playoff seeds, and every bracket game with scores. Rounds are labeled (quarterfinal, semifinal, final, 3rd place).
+- Weekly matchup results.
+- Per team: the season's top scorer by **started points only** (your definition: points scored while in that team's starting lineup). Ties are listed as ties.
+- League records: highest single-week score, highest scoring season, and so on.
+- Every trade, with its date and the assets exchanged.
+- Draft results, pick by pick.
+- **Settings timeline:** a diff between consecutive seasons' snapshots, e.g. "`waiver_type` 0 → 2 between the 2024 and 2025 seasons", with decoded labels once you've verified each field.
+
+**Honest limits, encoded in the facts themselves:**
+- **Settings changes are known only to the season.** [certain] Sleeper doesn't timestamp them. A setting change is dated only when an approved doc, vote or ruling gives a date, and it's cited as that source, never as Sleeper.
+- **Team identity is fixed per season.** Owners and team names change in dynasty leagues (orphan takeovers, renames), so every fact is attributed to the team *as it was that season*.
+  - [guessing] Whether the `rosters` endpoint of a completed league still reflects that season's owners is unverified. It gets checked against the draft and transaction history on your league's chain before any ownership fact becomes citable.
+- **The in-progress season is excluded** from season facts until its bracket is final. Weekly facts for weeks already played are allowed.
+
+**History eval cases**, added to each league's set:
+- ordinary lookups (the semifinals two years ago, each team's top scorer, when a trade happened)
+- a tie
+- an empty lineup slot
+- an owner change mid-dynasty
+- a question about the current, unfinished season
+- "when did X change" where only the season is known: the answer must say "between the 2024 and 2025 seasons", never a date
+- a player who scored heavily from the bench (must not count as a top scorer)
 
 ## 6. Open questions (answer before the phase listed)
 - **Q1: RESOLVED (2026-09-28).** You accepted that on the Gemini free tier Google may use league content to improve its products. The free plan proceeds as written. Cropping names out of screenshots stays optional.

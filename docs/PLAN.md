@@ -475,6 +475,15 @@ What this changes in Phase 1:
   - NSL: 5 seasons, 155 setting records.
   - Verifying one NSL field made exactly its 5 season records citable.
 
+**Also built on PR #5, ahead of the Mac work:**
+- **Phase 2 harness:** the case format, a conservative grader, gate metrics with the zero-failure 95% upper bound, a resumable runner that respects free-tier quotas, the always-abstain baseline, and generic adversarial cases.
+- **Phase 3 pipeline:**
+  - the full-context corpus
+  - the structured draft, then the deterministic checks, then the independent verifier, then the reply
+  - an audit log of every attempt
+  - the commissioner desk: flags, two-step rulings, relay citations
+- **Phase 4 modes:** shadow and live, wired into the webhook server.
+
 **Phase 1 exit criteria that need you:**
 - create the service account and share the Dynasty Pigskin folder
 - run `comish sync football`

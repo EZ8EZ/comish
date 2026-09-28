@@ -124,3 +124,23 @@ The fallback order is:
 3. The web-page fallback channel.
 
 When everything passes, save the `spike-report` output. That is the Phase 0 go/no-go record.
+
+## 7. After the spike: shadow mode, then live
+
+Do this only after the Phase 0 spike passes, the Phase 1 review is done (see `deploy/google-setup.md`), and the eval gate passes (`uv run comish eval football --answerer pipeline`).
+
+1. **Bind the league chat.**
+   - Run `uv run comish chats`, then add the league group's GUID as `chat_guid` for that league in `data/leagues.yaml`.
+   - Add your phone number or email under `flag_handles`.
+2. **Open the DM channel.** From your phone, text the bot's Apple ID `help`. That creates the 1:1 chat it uses for flags, and it replies with the command list.
+3. **Switch to shadow mode.**
+   - In `~/Library/LaunchAgents/com.comish.server.plist`, set `COMISH_MODE` to `shadow`, then reload the agent:
+     ```bash
+     launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.comish.server.plist
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.comish.server.plist
+     ```
+   - For 2 to 3 weeks, every `@comish` question in the group produces a private DM showing what the bot would have replied. Nothing is posted to the group.
+   - Anything it can't answer arrives as a flag you can rule on: `rule F17 <text>`, then `yes`.
+   - Every wrong draft becomes a new eval case.
+4. **Go live** once shadow mode has produced no wrong answers: set `COMISH_MODE` to `live` and reload the agent the same way.
+

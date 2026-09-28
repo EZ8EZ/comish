@@ -70,9 +70,9 @@ flowchart LR
 |---|---|---|
 | 0 | iMessage spike: bot joins a group, detects `@comish`, replies `pong` | **Built, awaiting on-device run** |
 | 1 | Ingestion and review: Drive, screenshots, Sleeper, admin review UI | **Built, awaiting Google setup and first review** |
-| 2 | Eval harness and labeled question set | Planned |
-| 3 | Q&A pipeline with verification, abstention and commissioner tools | Planned |
-| 4 | Live in the football league (shadow mode first) | Planned |
+| 2 | Eval harness and labeled question set | **Harness built**; needs your real Q&A pairs |
+| 3 | Q&A pipeline with verification, abstention and commissioner tools | **Built**; must pass the eval gate |
+| 4 | Live in the football league (shadow mode first) | Shadow and live modes built; runs on the bot Mac |
 | 5 | Second league (basketball) | Planned |
 
 The full design, exit criteria and risk register are in [`docs/PLAN.md`](docs/PLAN.md). Recommended GitHub settings (branch ruleset, secret scanning) are in [`docs/REPO_SETTINGS.md`](docs/REPO_SETTINGS.md).
@@ -109,6 +109,15 @@ The bot Mac must stay on **macOS 15 Sequoia**: sending into group chats through 
 | `comish review-status <slug>` | What's citable, pending review and failed |
 | `comish admin` | Run the review UI on `127.0.0.1:8788` |
 | `comish verify-field <slug> <path>` | Mark a Sleeper field verified (or `--unverify`) |
+| `comish ask <slug> "question"` | Run the full answer pipeline and show the reply, what it cited, and why it abstained if it did |
+| `comish eval <slug>` | Run the league's eval cases (resumable) and print the gate report; `--answerer pipeline` for the real pipeline |
+
+**Modes** (`COMISH_MODE` in the launchd agent):
+- `pong`: the Phase 0 spike.
+- `shadow`: answers go only to you, privately.
+- `live`: answers go to the group chat, and abstentions are flagged to you.
+
+In every mode, DMs from your configured handles accept commissioner commands: `rule F17 <text>` then `yes`, `skip F17`, `status`, `help`.
 
 ## Configuration
 
@@ -129,13 +138,15 @@ For tests, a `COMISH_<NAME>` environment variable overrides the Keychain.
 | Variable | Default | Meaning |
 |---|---|---|
 | `COMISH_BLUEBUBBLES_URL` | `http://127.0.0.1:1234` | BlueBubbles server URL |
+| `COMISH_MODE` | `pong` | `pong`, `shadow` or `live` (see Modes above) |
 | `COMISH_SEND_METHOD` | `apple-script` | Use `private-api` once SIP is off and the BlueBubbles helper is installed |
 | `COMISH_ALLOWED_CHAT_GUIDS` | empty (answers nowhere) | Comma-separated chat GUIDs the bot may answer in |
 | `COMISH_MAX_PER_SENDER_PER_10MIN` | `20` | Per-sender question limit |
 | `COMISH_MAX_OUTBOUND_PER_DAY` | `100` | Hard daily cap on bot messages, to protect the Apple ID |
 | `COMISH_LOG_DIR` | `logs` | Where `events.jsonl` is written |
 | `COMISH_DATA_DIR` | `data` | League databases, downloaded screenshots and `leagues.yaml` (gitignored) |
-| `COMISH_GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model for transcription; check the free-tier column before changing |
+| `COMISH_GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model for transcription and drafting answers; check the free-tier column before changing |
+| `COMISH_GEMINI_VERIFIER_MODEL` | `gemini-2.5-pro` | A different model that checks every drafted answer |
 | `COMISH_ADMIN_HOST` / `COMISH_ADMIN_PORT` | `127.0.0.1` / `8788` | Where the review UI listens |
 
 **Leagues** live in `data/leagues.yaml`, written by `comish league add`. It's gitignored because it holds chat GUIDs and phone numbers; [`config/leagues.example.yaml`](config/leagues.example.yaml) shows the format.
@@ -149,6 +160,10 @@ comish/
   kb/               per-league SQLite knowledge base and review rules
   ingest/           Sleeper, Google Drive (docs, PDFs, sheets), dates, screenshots, sync
   llm/              provider interface and the Gemini provider
+  answer/           answer pipeline: corpus, drafting, deterministic checks, verifier, reply
+  commissioner/     flags, two-step rulings, DM commands
+  evals/            eval cases, conservative grader, gate metrics, resumable runner
+  bot.py            what the bot does in shadow and live modes
   admin/            commissioner review UI (server-rendered, no JavaScript)
   commands.py       league add, sync, review status
   leagues.py        league config
@@ -187,7 +202,7 @@ Everything in v1 runs on free services, so the recurring cost is $0.
 |---|---|
 | Runtime | Python 3.12, FastAPI, SQLite, launchd, on the bot Mac |
 | iMessage | BlueBubbles Server (free, self-hosted) with a dedicated Apple ID |
-| LLM | Gemini API free tier, behind a provider interface (screenshot transcription today) |
+| LLM | Gemini API free tier, behind a provider interface: one model drafts, a different one verifies |
 | Data | Google Drive via a read-only service account, and the public Sleeper API |
 
 ## Limitations

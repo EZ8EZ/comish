@@ -84,4 +84,26 @@ MIGRATIONS: list[str] = [
         report TEXT NOT NULL
     );
     """,
+    # 2: every question and answer attempt, for audit and for growing the eval set
+    """
+    CREATE TABLE attempts (
+        id INTEGER PRIMARY KEY,
+        question TEXT NOT NULL,
+        asked_by TEXT,
+        received_at TEXT NOT NULL,
+        corpus_hash TEXT NOT NULL,
+        generator_model TEXT NOT NULL,
+        verifier_model TEXT NOT NULL,
+        draft TEXT,
+        checks TEXT NOT NULL,
+        verifier TEXT,
+        decision TEXT NOT NULL CHECK (decision IN ('answered', 'abstained')),
+        reason TEXT NOT NULL DEFAULT '',
+        reply TEXT NOT NULL,
+        citations TEXT NOT NULL DEFAULT '[]',
+        latency_ms INTEGER NOT NULL,
+        shadow INTEGER NOT NULL DEFAULT 0,
+        commish_verdict TEXT
+    );
+    """,
 ]

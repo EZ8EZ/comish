@@ -480,6 +480,59 @@ class LeagueStore:
         )
         return [_record(r) for r in rows]
 
+    def context_records(self) -> list[Record]:
+        """What the answer model sees: citable records plus superseded ones (marked as such)."""
+        rows = self._query(
+            """SELECT r.* FROM records r JOIN sources s ON s.id = r.source_id
+               WHERE s.status = 'approved' AND r.status IN ('approved', 'superseded')
+               ORDER BY r.id"""
+        )
+        return [_record(r) for r in rows]
+
+    def record_by_label(self, label: str) -> Record | None:
+        if not label.startswith("R-") or not label[2:].isdigit():
+            return None
+        try:
+            return self.get_record(int(label[2:]))
+        except KeyError:
+            return None
+
+    def log_attempt(self, attempt: dict[str, Any]) -> int:
+        columns = [
+            "question",
+            "asked_by",
+            "received_at",
+            "corpus_hash",
+            "generator_model",
+            "verifier_model",
+            "draft",
+            "checks",
+            "verifier",
+            "decision",
+            "reason",
+            "reply",
+            "citations",
+            "latency_ms",
+            "shadow",
+        ]
+        values = [
+            json.dumps(attempt[c], sort_keys=True)
+            if isinstance(attempt.get(c), (dict, list))
+            else attempt.get(c)
+            for c in columns
+        ]
+        with self._tx() as db:
+            cur = db.execute(
+                f"INSERT INTO attempts ({', '.join(columns)}) "  # noqa: S608 - fixed column list
+                f"VALUES ({', '.join('?' for _ in columns)})",
+                values,
+            )
+            return int(cur.lastrowid or 0)
+
+    def attempts(self, limit: int = 50) -> list[dict[str, Any]]:
+        rows = self._query("SELECT * FROM attempts ORDER BY id DESC LIMIT ?", (limit,))
+        return [dict(r) for r in rows]
+
     # Image transcriptions
 
     def save_transcription(

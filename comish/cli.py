@@ -15,8 +15,11 @@ Knowledge base (Phase 1):
   comish verify-field <slug> <path> [--unverify]
 
 Evaluation (Phase 2):
-  comish eval <slug> [--repeat 3] [--max-attempts N] [--pause S]
+  comish eval <slug> [--answerer pipeline] [--repeat 3] [--max-attempts N] [--pause S]
                                    run the league's cases (resumable) and print the gate report
+
+Answering (Phase 3):
+  comish ask <slug> "question"     run the full pipeline and show the reply and why
 """
 
 import argparse
@@ -170,7 +173,7 @@ def _eval_cmd(settings: Settings, args: argparse.Namespace) -> int:
     from comish.evals.cases import ADVERSARIAL_CASES, load_cases
     from comish.evals.metrics import gate
     from comish.evals.report import format_report
-    from comish.evals.runner import Checkpoint, always_abstain, run_evals
+    from comish.evals.runner import Answerer, Checkpoint, always_abstain, run_evals
 
     get_league(settings, args.slug)
     league_dir = settings.data_dir / args.slug / "evals"
@@ -179,19 +182,27 @@ def _eval_cmd(settings: Settings, args: argparse.Namespace) -> int:
     cases = load_cases(*[f for f in files if f.exists()], ADVERSARIAL_CASES)
     verdicts_path = league_dir / "verdicts.yaml"
     overrides = yaml.safe_load(verdicts_path.read_text()) if verdicts_path.exists() else {}
-    if args.answerer != "abstain":
-        print("only the always-abstain baseline exists until the Phase 3 pipeline lands")
-        return 2
+    answerer: Answerer = always_abstain
+    store = None
+    if args.answerer == "pipeline":
+        from comish.commands import build_pipeline, pipeline_answerer
+
+        store = _store(settings, args.slug)
+        answerer = pipeline_answerer(
+            build_pipeline(settings, get_league(settings, args.slug), store)
+        )
     checkpoint = Checkpoint(league_dir / "runs" / f"{args.name}.jsonl")
     runs = run_evals(
         cases,
-        always_abstain,
+        answerer,
         checkpoint,
         repeat=args.repeat,
         pause_s=args.pause,
         max_attempts=args.max_attempts,
         overrides=overrides or {},
     )
+    if store is not None:
+        store.close()
     result = gate(runs)
     print(format_report(runs, result))
     return 0 if result["passed"] else 1
@@ -213,6 +224,9 @@ def main(argv: list[str] | None = None) -> int:
     verify.add_argument("slug")
     verify.add_argument("path")
     verify.add_argument("--unverify", action="store_true")
+    ask = sub.add_parser("ask")
+    ask.add_argument("slug")
+    ask.add_argument("question")
     ev = sub.add_parser("eval")
     ev.add_argument("slug")
     ev.add_argument("--cases", nargs="*", default=[])
@@ -267,6 +281,15 @@ def main(argv: list[str] | None = None) -> int:
         print(("Unverified " if args.unverify else "Verified ") + args.path)
     elif args.command == "eval":
         return _eval_cmd(settings, args)
+    elif args.command == "ask":
+        from comish.commands import build_pipeline, format_answer, get_league
+
+        store = _store(settings, args.slug)
+        try:
+            pipeline = build_pipeline(settings, get_league(settings, args.slug), store)
+            print(format_answer(pipeline.answer(args.question, asked_by="cli")))
+        finally:
+            store.close()
     return 0
 
 

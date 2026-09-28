@@ -23,6 +23,8 @@ class Settings:
     data_dir: Path = Path("data")
     # Free-tier availability changes; check the Gemini pricing page before changing this.
     gemini_model: str = "gemini-2.5-flash"
+    # A different model checks answers, so generator and verifier errors are less correlated.
+    gemini_verifier_model: str = "gemini-2.5-pro"
     admin_host: str = "127.0.0.1"
     admin_port: int = 8788
 
@@ -42,6 +44,9 @@ class Settings:
             log_dir=Path(env.get("COMISH_LOG_DIR", str(cls.log_dir))),
             data_dir=Path(env.get("COMISH_DATA_DIR", str(cls.data_dir))),
             gemini_model=env.get("COMISH_GEMINI_MODEL", cls.gemini_model),
+            gemini_verifier_model=env.get(
+                "COMISH_GEMINI_VERIFIER_MODEL", cls.gemini_verifier_model
+            ),
             admin_host=env.get("COMISH_ADMIN_HOST", cls.admin_host),
             admin_port=int(env.get("COMISH_ADMIN_PORT", cls.admin_port)),
         )

@@ -5,7 +5,7 @@ Sleeper, Drive and the LLM.
 """
 
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from comish.config import Settings
 from comish.ingest.drive import DriveClient
@@ -20,6 +20,10 @@ from comish.leagues import (
     parse_drive_folder_id,
     save_leagues,
 )
+
+if TYPE_CHECKING:
+    from comish.answer.pipeline import AnswerPipeline, AnswerResult
+    from comish.evals.runner import Answerer
 
 Prompt = Callable[[str], str]
 
@@ -152,4 +156,43 @@ def review_status(store: LeagueStore, league: League) -> str:
         f"  verified fields:  {verified}",
         f"  last sync:        {last['finished_at'] if last else 'never'}",
     ]
+    return "\n".join(lines)
+
+
+def build_pipeline(settings: Settings, league: League, store: LeagueStore) -> "AnswerPipeline":
+    from comish.answer.pipeline import AnswerPipeline
+    from comish.llm.gemini import GeminiLLM
+    from comish.secrets import get_secret
+
+    key = get_secret("gemini_api_key")
+    return AnswerPipeline(
+        store,
+        league,
+        GeminiLLM(key, settings.gemini_model),
+        GeminiLLM(key, settings.gemini_verifier_model),
+    )
+
+
+def pipeline_answerer(pipeline: "AnswerPipeline") -> "Answerer":
+    """Adapt the pipeline to the eval runner's Answerer interface."""
+    from comish.evals.grader import Citation, Outcome
+
+    def answer(question: str) -> Outcome:
+        result = pipeline.answer(question, asked_by="eval")
+        return Outcome(
+            decision="answered" if result.decision == "answered" else "abstained",
+            reply=result.reply,
+            citations=tuple(Citation(c.label, c.source, c.quote) for c in result.citations),
+            abstain_reason=result.reason,
+        )
+
+    return answer
+
+
+def format_answer(result: "AnswerResult") -> str:
+    lines = [result.reply, "", f"decision: {result.decision}"]
+    if result.reason:
+        lines.append(f"reason:   {result.reason}")
+    for c in result.citations:
+        lines.append(f"cited:    {c.label} ({c.source})")
     return "\n".join(lines)

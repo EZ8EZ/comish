@@ -454,6 +454,72 @@ What this changes in Phase 1:
 
 **Consequence:** [likely] most real NSL questions are about policy (tanking, dues, trade vetoes, taxi rules beyond the slot count). Those will abstain and be flagged to you until relayed rulings build up the record. Expect a high abstain rate at first. That's correct behavior, not a bug.
 
+## 5b-status. Phase 1 progress (PR EZ8EZ/comish#5) and remaining build
+**Done and pushed:**
+- **Step 1, the knowledge base and league config.**
+  - League config lives in `comish/leagues.py`. The real file is `data/leagues.yaml`, which is gitignored because it holds chat GUIDs and phone numbers; `config/leagues.example.yaml` is committed.
+  - The store is `comish/kb/schema.py` + `store.py`. Its review rules are enforced in code, and 32 tests cover them.
+- **Step 2, Sleeper.**
+  - `comish/ingest/sleeper.py` is the client and walks each league's season chain.
+  - `comish/ingest/fields.py` plus `sleeper_fields/{common,nfl,nba}.yaml` form the field dictionary.
+  - Setting records are citable only after you verify the field.
+  - A dry run on Dynasty Pigskin gave 3 seasons and 179 records, and correctly showed rolling waivers in 2024 and FAAB from 2025. None of that output was committed.
+
+**Remaining, in order (each is one commit on PR #5, with tests, and CI green before moving on):**
+3. **Drive ingestion** (`comish/ingest/drive.py`, `docs.py`, `pdfs.py`, `sheets.py`, `dates.py`, `sync.py`)
+   - **Drive client:** a `DriveClient` protocol with three calls: `list_children(folder_id)`, `export(file_id, mime)`, `download(file_id)`.
+     - The real client uses `googleapiclient` with a service account and the `drive.readonly` scope. The key comes from the Keychain as `google_service_account_json`.
+     - A fake client is used in tests.
+   - **Walk:** recursive, keeping the subfolder path (e.g. `24-25/IMG_2740.PNG`).
+   - **Google Docs:** exported as `text/markdown` and split on headings into `Doc > H1 > H2` section records. Long sections are split by paragraph, with ordinals.
+   - **PDFs:** read with `pypdf`, one record per page. A page with no text goes to the image pipeline.
+   - **Google Sheets:** exported as `.xlsx` and read with `openpyxl`, because Drive's CSV export only returns the first tab. Every non-empty row becomes a `sheet_row` record, cited as sheet, tab and row.
+   - **Dates:** found by code, never by the LLM. It pattern-matches markers ("Effective", "Amended", "Updated", "Ratified", "Adopted", "Revised", "Last updated", "As of") next to ISO, US and written-out dates, and also dates inside headings.
+     - A match becomes a *proposed* date that you confirm when you approve.
+     - Drive `modifiedTime` is shown only as a hint.
+   - **Sync:**
+     - Each file is reported as ingested, unchanged, changed, skipped (unsupported type) or failed.
+     - Change detection uses Drive `md5Checksum` or a hash of the exported content, so a bumped modified time alone doesn't count as a change.
+     - Files deleted from Drive are archived.
+     - A second run changes nothing.
+     - Sleeper sync runs in the same command.
+     - Leagues without a Drive folder (NSL) skip the Drive steps.
+4. **LLM provider and screenshot transcription** (`comish/llm/base.py`, `gemini.py`, `comish/ingest/images.py`)
+   - **Interface:** `generate_json(prompt, schema, images)`, which raises `LLMError` on any failure. There's a fake provider for tests.
+   - **Gemini:** uses `google-genai` (JSON response schema, image parts). The model name is configurable, and the key comes from the Keychain as `gemini_api_key`.
+   - **Two passes:** two independent transcriptions with different prompts produce decision, visible date text, parsed date, votes for and against, outcome and uncertainties.
+     - Code compares them field by field.
+     - The record starts `pending_review`.
+     - A visible date becomes the proposed date, with `date_basis=visible-in-image`.
+   - **Failures** (quota, bad JSON, timeout) mark the source `failed` with the reason. A failed source is never citable, and the next sync retries it.
+5. **Admin review UI** (`comish/admin/`, FastAPI + Jinja2)
+   - **Plain HTML forms, no HTMX.** This is simpler and needs no JavaScript or CDN. It's a small change from the earlier plan.
+   - **Security:** HTTP Basic auth, with the password from the Keychain as `admin_password`, plus a CSRF token on every form. It binds to `127.0.0.1` by default and is reached over Tailscale.
+   - **Pages:**
+     - a dashboard of review counts per league
+     - the sources list
+     - a source page to set a date, mark undated, approve or reject, and approve or reject individual records
+     - a screenshot queue showing the image beside pass A and pass B, with disagreements highlighted and the text editable
+     - a Sleeper field-verification checklist showing each field's value for every season
+   - **Playwright end-to-end tests** run on a seeded fixture league. They cover approving a transcription, editing a date, marking a source undated, verifying a field, and confirming a rejected record never becomes citable.
+     - CI adds `playwright install --with-deps chromium`.
+     - Locally the tests use the pre-installed Chromium.
+6. **CLI, guide and docs**
+   - **CLI commands:**
+     - `comish league add`, which is interactive: Sleeper username or league ID, Drive link or none, chat GUID, ruling authority. It writes `data/leagues.yaml`.
+     - `comish sync <slug>`
+     - `comish review-status <slug>`
+     - `comish admin`
+     - `comish verify-field <slug> <path>`
+   - **`deploy/google-setup.md`:** the service account, sharing the folder as Viewer, and the Gemini AI Studio key. All free and no card on file.
+   - **Docs:** the README status table and `docs/PLAN.md` are updated. PR #5 is taken to green, then handed to you to merge.
+
+**Phase 1 exit criteria that need you:**
+- create the service account and share the Dynasty Pigskin folder
+- run `comish sync football`
+- review and date the backlog in the admin UI
+- verify the Sleeper fields
+
 ## 5c. League history (Phase 3b)
 Managers want quick answers to questions that are buried in the Sleeper app, like "what were the semifinal matchups two years ago?", "who was the highest-scoring player on each team?" or "when did we switch to FAAB?".
 

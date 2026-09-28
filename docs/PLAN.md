@@ -7,8 +7,9 @@ The repo is empty apart from a README, so nothing existing can be reused. This p
 
 ### Decisions already made (from your answers)
 - **Both group chats are all-iPhone.** The bot can be added to the existing groups. Apple allows adding members only to all-Apple groups of 3 or more people.
-- **Hardware:** your 2018 or 2019 Intel MacBook Pro for v1. You'd prefer free, with a hard cap of $25/mo.
-- **LLM provider:** no preference, so I'm choosing Anthropic Claude (reasons below).
+- **Hardware:** your 2018 or 2019 Intel MacBook Pro for v1.
+- **Budget: build v1 on free services only ($0/mo).** The earlier $25/mo cap is removed. Every component is on a free tier: BlueBubbles, Google Drive service account, Sleeper API, Tailscale, Cloudflare Tunnel and the Gemini API free tier. Paid upgrades are listed as options, never defaults.
+- **LLM provider:** the Gemini API free tier, because it's the only free option that can do the job (reasons in §2). The LLM sits behind a provider interface, so moving to a paid provider (Claude) later is a config change, not a rewrite.
 - **v1 scope:** rules, votes, rulings and Sleeper *settings* only. Roster, pick and transaction lookups wait for v2.
 - **Screenshots:** every transcription needs your approval before it can be cited.
 - **Rollout:** shadow mode before going live.
@@ -22,7 +23,11 @@ The repo is empty apart from a README, so nothing existing can be reused. This p
 2. **"Zero false answers on the eval" doesn't mean the true false-answer rate is near zero.** By the rule of three, 0 errors in N answered questions only bounds the true rate below about 3/N at 95% confidence. 60 answered cases still allows up to 5%. That's why shadow mode and continuous logging are required, not optional.
 3. **The 75% coverage floor and the zero-false-answer gate will pull against each other.** If the corpus is ambiguous, the fix is more rulings from you, not a looser bot. Expect to spend real time recording rulings during Phase 3.
 4. **iMessage automation is unofficial and currently fragile.** On macOS 26 Tahoe, sending into a group chat through AppleScript is broken. **Your MacBook must stay on macOS 15 Sequoia.** If it's a 2019 16-inch model, which is eligible for Tahoe, do not upgrade it.
-5. **An always-on 2018 or 2019 Intel laptop is a stopgap, not a server.** Leaving it plugged in 24/7 risks battery swelling, and it needs auto-login with FileVault off to recover from a reboot. It's fine for v1. Plan to replace it with a used M1 Mac mini (about $250–350 one-time) if the bot proves its value.
+5. **"Free" means your league data can be used to train Google's models.** [certain] Google's Gemini API pricing page marks the free tier "Used to improve our products: Yes" and the paid tier "No" ([pricing](https://ai.google.dev/gemini-api/docs/pricing)).
+   - Everything the bot sends is covered: rules docs, vote screenshots (which show names and phone numbers) and managers' questions.
+   - The free tier's rate limits can also be cut without notice. [likely] Google cut them for several models in Dec 2025.
+   - You must accept both before Phase 1 (Q1).
+6. **An always-on 2018 or 2019 Intel laptop is a stopgap, not a server.** Leaving it plugged in 24/7 risks battery swelling, and it needs auto-login with FileVault off to recover from a reboot. It's fine for v1. If the bot proves its value, the one hardware upgrade worth considering is a used M1 Mac mini (about $250–350 one-time). That's optional and not part of the free v1.
 
 ---
 
@@ -106,17 +111,28 @@ All messaging code sits behind a `Transport` interface, so changing providers do
   - No vector DB.
 - **Scheduling:** macOS launchd for the service and the nightly sync. No Docker on the MacBook.
 - **Secrets:** macOS Keychain through the `keyring` library. That covers the Anthropic key, the BlueBubbles password, the Google service account JSON and the admin password. Nothing goes in the repo, and `.env` is used only for non-secret config.
-- **Hosting:** everything on the MacBook. The only recurring cost is the LLM API.
-- **LLM: Claude Opus 5.5 (`claude-opus-5-5`)** for transcription, answering and verification.
-  - [certain] Pricing is $4/$20 per MTok, cache reads $0.20/MTok, 1M context, vision.
-  - [certain] Structured outputs are GA via `output_config.format`.
-  - Why Claude: strong instruction-following on abstain-when-unsure, cheap cache reads for a corpus-in-context design, and one vendor for vision and text.
-- **Cost estimate:**
-  - [likely] Assume a 30–60k-token corpus per league.
-  - A question costs about $0.25 for a cold-cache generator call, about $0.02 for the verifier (cache hit on the same prefix), plus output. That's about **$0.30 per question, or about $9/mo at 30 questions**.
-  - Image transcription for 50 files × 2 passes is under $2, one-time.
-  - A full eval run over about 120 cases with a warm cache and the Batch API is about $3–6.
-  - The risk is build-phase tuning. At 10–20 eval runs, one month can exceed $25 (see question Q1).
+- **Hosting:** everything on the MacBook. Recurring cost: **$0**.
+- **LLM: the Gemini API free tier, behind a provider interface** (`commish/llm/`).
+  - **Why Gemini:** [certain] it's the only no-cost API with the four things this design needs:
+    - a context window large enough for the whole corpus (1M tokens on the Flash models)
+    - image input, for transcribing screenshots
+    - JSON-schema structured output
+    - no credit card
+  - **Model choice:** a current free Flash model for generation and transcription. The verifier is a *different* free-tier Gemini model, a Pro-class one where the free tier allows it. That keeps the check independent of the generator.
+    - [likely] Model names change often, so they live in config and are checked against the free-tier column of the pricing page at build time.
+  - **Rejected free options:**
+    - Groq free tier (open models): [certain] a limit of 6–30k tokens per minute, which is too small to send a 30–60k-token corpus in one request.
+    - A local model on the Intel MacBook: [likely] too slow, and much weaker at abstaining and verifying claims.
+    - OpenRouter free models: rate limits, and an unclear chain of data handling.
+  - **Paid upgrade path**, only if the eval gate or privacy demands it: Claude through the same interface. [certain] The best-quality option is about $4/$20 per million input/output tokens, roughly $9/mo at 30 questions. [likely] The mid-tier option, at $2/$10, is roughly $4–5/mo. It's a config change.
+- **Free-tier constraints and how the design absorbs them:**
+  - **Rate limits:** [guessing] requests-per-day limits on free Pro-class models can be as low as tens per day. Check AI Studio for the project's real limits.
+    - At under 30 questions a month, live traffic is fine.
+    - **Eval runs are the bottleneck:** about 120 cases × 2 calls × 3 repeat runs is about 720 calls.
+    - So the eval runner is throttled and resumable. It paces itself to the free limits, checkpoints progress, and continues the next day. A full gate may take 2–4 days of wall-clock time instead of an hour.
+  - **Quota running out:** a daily quota error means **abstain and flag**, never a guess. The bot DMs you if the quota runs out.
+  - **No Batch API or paid caching on the free tier:** irrelevant at this volume.
+  - **Stability:** a failed call, bad JSON or a timeout from the free tier is treated as an abstain. The eval gate is re-run whenever Google changes a model.
 
 ## 3. Architecture
 
@@ -135,8 +151,8 @@ All messaging code sits behind a `Transport` interface, so changing providers do
  │                                            ▼                     │
  │  Answer pipeline (single league scope)                           │
  │   1 Context build: all APPROVED records + verified Sleeper       │
- │     settings → cached prompt prefix                              │
- │   2 Generate (Claude, structured JSON: decision, claims[],       │
+ │     settings → full-corpus prompt                                │
+ │   2 Generate (LLM, structured JSON: decision, claims[],          │
  │     citations[{record_id, verbatim quote}])                       │
  │   3 Deterministic checks (code)                                   │
  │   4 LLM verifier (independent call, adversarial prompt)           │
@@ -173,7 +189,7 @@ All messaging code sits behind a `Transport` interface, so changing providers do
 - **`sleeper_snapshots`:** season, league_id, previous_league_id, fetched_at, league_json, etag. The chain is walked on sync.
 - **`sleeper_fields`** (YAML in repo per sport + per-league verification row): path (`settings.trade_deadline`), label, decoder (e.g. `week number; 99 = no deadline` [guessing on sentinel]), app_enforced=true, verified_by_commish_at. **Only verified fields become citable records**, so an unverified code meaning can never be quoted. Examples of unverified meanings: `waiver_type` 0/1/2 and `settings.type` 2 = dynasty [likely], both from community sources, not official docs.
 - **`questions`:** id, chat_guid, sender_handle, text, received_at, rate_limited(bool).
-- **`attempts`:** question_id, corpus_hash, model, prompt_version, draft_json, deterministic_check_results, verifier_json, decision (`answered`|`abstained`), abstain_reason, reply_text, tokens, cost_usd, latency_ms, shadow(bool), commish_verdict (shadow mode).
+- **`attempts`:** question_id, corpus_hash, model, prompt_version, draft_json, deterministic_check_results, verifier_json, decision (`answered`|`abstained`), abstain_reason, reply_text, tokens, llm_calls, latency_ms, shadow(bool), commish_verdict (shadow mode).
 - **`flags`** (ops.db): id (`F17`), league, question_id, reason, sent_at, status (`open`|`ruled`|`dismissed`), ruling_record_id.
 
 ### Precedence rules (enforced in code and prompt)
@@ -190,7 +206,7 @@ All messaging code sits behind a `Transport` interface, so changing providers do
 ### Answer pipeline details
 - **Retrieval: full context, no RAG.**
   - With 10–50 files, [likely] each league's approved corpus is under 100k tokens.
-  - The whole approved corpus goes into a cached system-prompt prefix, so the model *sees every potentially superseding record*. Top-k retrieval can silently drop exactly the record that matters.
+  - The whole approved corpus goes into the system prompt on every request, so the model *sees every potentially superseding record*. Top-k retrieval can silently drop exactly the record that matters.
   - Guardrail: if a league's corpus exceeds 150k tokens, switch to SQLite FTS5, plus "include all records sharing the question's topic tags".
 - **Chunking:**
   - Google Docs are exported as `text/markdown` and split on headings into `section_path` records. Long sections are split by paragraph with the path kept.
@@ -208,8 +224,8 @@ All messaging code sits behind a `Transport` interface, so changing providers do
   - Every number, date, week, dollar amount and position token in `answer_text` appears in a cited quote.
   - Every Sleeper citation matches the current snapshot value, re-fetched if older than 1 hour.
   - No cited record is undated while a conflicting record exists.
-- **Verifier:** a separate Claude call.
-  - It gets the same cached corpus prefix, which makes it cheap, plus the question and draft.
+- **Verifier:** a separate call on a different model.
+  - It gets the same full corpus, plus the question and the draft.
   - Adversarial instructions: "find any reason this answer could be wrong, outdated, incomplete, or require judgment".
   - It returns per-claim `supported`, plus `newer_record_may_supersede`, `sources_conflict`, `requires_judgment`, `fully_answers_question`, and `verdict`.
   - Anything other than a clean pass means abstain.
@@ -248,7 +264,7 @@ All messaging code sits behind a `Transport` interface, so changing providers do
   - Non-`@commish` messages are never stored or sent to the LLM.
 - **Limits:**
   - 3 questions per sender per 10 minutes, 20 per chat per hour.
-  - A daily LLM spend cap of $2 in code. On hitting the cap the bot abstains and DMs you. Also set a monthly spend limit in the Anthropic console.
+  - A daily cap on LLM calls in code, kept below the free-tier quota. When it is hit, the bot abstains and DMs you.
   - A global outbound cap of 60 messages per day to protect the Apple ID.
 - **League isolation:**
   - One SQLite file per league.
@@ -292,7 +308,7 @@ All messaging code sits behind a `Transport` interface, so changing providers do
   - uncited answers (must be 0)
   - abstain recall on should-abstain cases (must be 100%)
   - coverage = correct answers / answerable cases (must be ≥ 75%)
-  - cost and latency per case
+  - LLM calls and latency per case
 - **Ship gate:**
   - 0 false answers, 0 uncited, 100% abstain recall.
   - Coverage ≥ 75%, sustained across **3 repeated full runs**, because the model is nondeterministic.
@@ -319,6 +335,7 @@ Sleeper NBA note: [certain] the NBA endpoints return data today, but Sleeper's d
 ```
 pyproject.toml, README.md, .gitignore
 commish/
+  llm/{base.py, gemini.py, anthropic.py (paid upgrade path, unused in v1)}
   config.py  secrets.py  cli.py (typer)  server.py (FastAPI)
   transport/{base.py, bluebubbles.py, imsg.py, web.py}
   intake.py  ratelimit.py  audit.py
@@ -334,10 +351,10 @@ tests/ (pytest: intake filter, checks, precedence, isolation, sleeper chain w/ f
 ```
 
 ## 6. Open questions (answer before the phase listed)
-- **Q1 (before Phase 3):** Build-phase eval tuning could cost $30–80 one-time, beyond your $25/mo cap. Two options:
-  - (a) Accept a one-time build budget.
-  - (b) Tune on Sonnet 5.5 ($2/$10) and run only gate runs on Opus 5.5.
-  - Either way, steady-state runtime is about $9/mo.
+- **Q1 (before Phase 1, blocking):** Do you accept that on the Gemini free tier Google may use league content to improve its products, including human review? That content is rules docs, vote screenshots showing managers' names and numbers, and questions.
+  - **Yes:** the free plan proceeds as written.
+  - **No:** the cheapest fix is the paid Gemini tier or Claude at about $4–9/mo. Either way, there is no free option that keeps the data private.
+  - Optional mitigation if you say yes: crop names and phone numbers out of screenshots before transcription. That's more work, and less context for dating votes.
 - **Q2 (Phase 0):** Which exact MacBook model and year, and which macOS version is it on now? This decides whether it's already on Tahoe (bad) and whether the Private API is viable on Intel.
 - **Q3 (Phase 1):** The two Drive folder links. I can inventory them read-only up front to size the corpus and file types.
 - **Q4 (Phase 1):** Is Google Cloud project creation OK? A free service account, with the folders shared read-only to its email. The OAuth "testing" alternative expires its token every 7 days, so the service account is the recommended option.
@@ -362,7 +379,9 @@ tests/ (pytest: intake filter, checks, precedence, isolation, sleeper chain w/ f
 | Sleeper API changes (esp. NBA) | Stored snapshots, schema validation on fetch, a DM on sync failure; the bot abstains if the snapshot is stale beyond 24h for settings questions |
 | Cross-league leakage | Per-league database and pipeline instance, leakage eval cases, no shared state |
 | Eval overfitting / small N | Rule-of-three framing, 3 repeated runs, a held-out subset you write after tuning, shadow mode |
-| Cost overrun | Code-level daily cap, Anthropic console monthly limit, cached prefix, Batch API for evals |
+| Free tier cut or removed (Gemini) | Provider interface; a quota exhausted means abstain and a DM to you; the eval runner is resumable; paid Gemini or Claude is a config switch (about $4–9/mo) |
+| League data used for training on the free tier | Explicit consent (Q1); optional cropping of names from screenshots; the paid tier removes it |
+| Unexpected charges | No card on the Google AI Studio project, so it can't bill; no paid services configured |
 | Privacy (group chat content to an API) | Only `@commish` messages are ever stored or sent; everything else is dropped at intake |
 | Drive service-account change detection is flaky | Poll a recursive `files.list` by `modifiedTime` plus a content hash instead of relying only on `changes.list` |
 

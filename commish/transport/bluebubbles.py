@@ -96,11 +96,12 @@ class BlueBubblesTransport:
         return await self._request("GET", "ping")
 
     async def list_chats(self, limit: int = 50) -> list[dict[str, Any]]:
-        return await self._request(
+        chats: list[dict[str, Any]] = await self._request(
             "POST",
             "chat/query",
             json={"limit": limit, "with": ["participants", "lastMessage"]},
         )
+        return chats
 
     async def aclose(self) -> None:
         await self._client.aclose()

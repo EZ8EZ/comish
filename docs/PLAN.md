@@ -26,7 +26,7 @@ The repo is empty apart from a README, so nothing existing can be reused. This p
 5. **"Free" means your league data can be used to train Google's models.** [certain] Google's Gemini API pricing page marks the free tier "Used to improve our products: Yes" and the paid tier "No" ([pricing](https://ai.google.dev/gemini-api/docs/pricing)).
    - Everything the bot sends is covered: rules docs, vote screenshots (which show names and phone numbers) and managers' questions.
    - The free tier's rate limits can also be cut without notice. [likely] Google cut them for several models in Dec 2025.
-   - You must accept both before Phase 1 (Q1).
+   - You accepted both on 2026-09-28 (Q1).
 6. **An always-on 2018 or 2019 Intel laptop is a stopgap, not a server.** Leaving it plugged in 24/7 risks battery swelling, and it needs auto-login with FileVault off to recover from a reboot. It's fine for v1. If the bot proves its value, the one hardware upgrade worth considering is a used M1 Mac mini (about $250–350 one-time). That's optional and not part of the free v1.
 
 ---
@@ -351,10 +351,7 @@ tests/ (pytest: intake filter, checks, precedence, isolation, sleeper chain w/ f
 ```
 
 ## 6. Open questions (answer before the phase listed)
-- **Q1 (before Phase 1, blocking):** Do you accept that on the Gemini free tier Google may use league content to improve its products, including human review? That content is rules docs, vote screenshots showing managers' names and numbers, and questions.
-  - **Yes:** the free plan proceeds as written.
-  - **No:** the cheapest fix is the paid Gemini tier or Claude at about $4–9/mo. Either way, there is no free option that keeps the data private.
-  - Optional mitigation if you say yes: crop names and phone numbers out of screenshots before transcription. That's more work, and less context for dating votes.
+- **Q1: RESOLVED (2026-09-28).** You accepted that on the Gemini free tier Google may use league content to improve its products. The free plan proceeds as written. Cropping names out of screenshots stays optional.
 - **Q2 (Phase 0):** Which exact MacBook model and year, and which macOS version is it on now? This decides whether it's already on Tahoe (bad) and whether the Private API is viable on Intel.
 - **Q3 (Phase 1):** The two Drive folder links. I can inventory them read-only up front to size the corpus and file types.
 - **Q4 (Phase 1):** Is Google Cloud project creation OK? A free service account, with the folders shared read-only to its email. The OAuth "testing" alternative expires its token every 7 days, so the service account is the recommended option.
@@ -390,6 +387,15 @@ All work goes on branch `ez/quirky-bohr-c16ge6`.
 - **Code:** the repo skeleton (`pyproject.toml`, `commish/transport/{base,bluebubbles}.py`, `commish/intake.py` with tests, the `pong` server).
 - **Guide:** `deploy/macos-setup.md`, a step-by-step for the bot Apple ID and hardening the MacBook.
 - **Then:** push and open a PR. The Phase 0 spike itself runs on your MacBook; I can't run it from this cloud container.
+
+## Automated checks (in place)
+Every PR runs this in CI (`.github/workflows/ci.yml`):
+- `ruff` lint and format checks
+- `mypy --strict` on `commish/`
+- `pytest`, including end-to-end tests over real HTTP against a fake BlueBubbles server
+- validation of the launchd plist
+
+Browser tests (Playwright) are added in Phase 1 with the admin review UI, and again in Phase 4 for the web fallback page. They aren't added before then because there's no UI yet.
 
 ## 8. Verification (end-to-end)
 - **Phase 0:** the scripted 50-ping test and the 72-hour soak log.

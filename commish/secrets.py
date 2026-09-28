@@ -18,15 +18,13 @@ class MissingSecret(RuntimeError):
     pass
 
 
-def get_secret(name: str, required: bool = True) -> str | None:
+def get_secret(name: str) -> str:
     value = os.environ.get(f"COMMISH_{name.upper()}")
     if not value:
         try:
             value = keyring.get_password(KEYRING_SERVICE, name)
         except keyring.errors.KeyringError:
             value = None
-    if required and not value:
-        raise MissingSecret(
-            f"Secret '{name}' not found. Run: keyring set {KEYRING_SERVICE} {name}"
-        )
+    if not value:
+        raise MissingSecret(f"Secret '{name}' not found. Run: keyring set {KEYRING_SERVICE} {name}")
     return value

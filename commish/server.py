@@ -33,7 +33,7 @@ def create_app(
             return
         try:
             await transport.send_text(msg.chat_guid, PONG)
-        except Exception as exc:  # noqa: BLE001 - log every send failure for the spike report
+        except Exception as exc:  # log every send failure; the spike report counts them
             log.write("send_failed", guid=msg.guid, chat=msg.chat_guid, error=str(exc))
             return
         now_ms = int(time.time() * 1000)

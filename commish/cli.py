@@ -1,9 +1,9 @@
 """commish CLI (Phase 0).
 
-    commish bb-ping          check BlueBubbles is reachable and the password works
-    commish chats            list chats with GUIDs, to pick COMMISH_ALLOWED_CHAT_GUIDS
-    commish serve            run the webhook server (pong spike)
-    commish spike-report     summarize logs/events.jsonl against the Phase 0 exit criteria
+commish bb-ping          check BlueBubbles is reachable and the password works
+commish chats            list chats with GUIDs, to pick COMMISH_ALLOWED_CHAT_GUIDS
+commish serve            run the webhook server (pong spike)
+commish spike-report     summarize logs/events.jsonl against the Phase 0 exit criteria
 """
 
 import argparse
@@ -11,6 +11,7 @@ import asyncio
 import statistics
 import sys
 from collections import Counter
+from typing import Any
 
 from commish.audit import EventLog
 from commish.config import Settings
@@ -63,7 +64,7 @@ def _serve(settings: Settings, host: str, port: int) -> None:
     uvicorn.run(app, host=host, port=port)
 
 
-def spike_report(events: list[dict]) -> dict:
+def spike_report(events: list[dict[str, Any]]) -> dict[str, Any]:
     received = {e["guid"]: e for e in events if e["event"] == "mention_received"}
     ponged = {e["guid"]: e for e in events if e["event"] == "pong_sent"}
     latencies = [e["latency_ms"] for e in ponged.values() if e.get("latency_ms") is not None]

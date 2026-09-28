@@ -106,4 +106,18 @@ MIGRATIONS: list[str] = [
         commish_verdict TEXT
     );
     """,
+    # 3: questions flagged to the commissioner, and how each was resolved
+    """
+    CREATE TABLE flags (
+        id INTEGER PRIMARY KEY,
+        question TEXT NOT NULL,
+        asked_by TEXT,
+        reason TEXT NOT NULL,
+        attempt_id INTEGER REFERENCES attempts(id),
+        status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'ruled', 'dismissed')),
+        ruling_record_id INTEGER REFERENCES records(id),
+        created_at TEXT NOT NULL,
+        resolved_at TEXT
+    );
+    """,
 ]

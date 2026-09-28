@@ -533,6 +533,73 @@ class LeagueStore:
         rows = self._query("SELECT * FROM attempts ORDER BY id DESC LIMIT ?", (limit,))
         return [dict(r) for r in rows]
 
+    # Flags and rulings
+
+    def create_flag(
+        self,
+        flag_id: int,
+        question: str,
+        asked_by: str | None,
+        reason: str,
+        attempt_id: int | None = None,
+    ) -> None:
+        with self._tx() as db:
+            db.execute(
+                """INSERT INTO flags (id, question, asked_by, reason, attempt_id, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (flag_id, question, asked_by, reason, attempt_id, now_iso()),
+            )
+
+    def get_flag(self, flag_id: int) -> dict[str, Any] | None:
+        rows = self._query("SELECT * FROM flags WHERE id = ?", (flag_id,))
+        return dict(rows[0]) if rows else None
+
+    def open_flags(self) -> list[dict[str, Any]]:
+        return [
+            dict(r) for r in self._query("SELECT * FROM flags WHERE status = 'open' ORDER BY id")
+        ]
+
+    def dismiss_flag(self, flag_id: int) -> None:
+        with self._tx() as db:
+            db.execute(
+                "UPDATE flags SET status = 'dismissed', resolved_at = ? WHERE id = ?",
+                (now_iso(), flag_id),
+            )
+
+    def add_ruling(self, flag_id: int, text: str, date: str) -> Record:
+        """Record a commissioner ruling: dated, approved (it's the commissioner's own words)."""
+        text = text.strip()
+        if not text:
+            raise ReviewError("a ruling needs text")
+        date = validate_date(date)
+        flag = self.get_flag(flag_id)
+        if flag is None:
+            raise ReviewError(f"no flag F{flag_id} in this league")
+        if flag["status"] != "open":
+            raise ReviewError(f"F{flag_id} is already {flag['status']}")
+        name = f"Commissioner ruling F{flag_id}"
+        source, _ = self.upsert_source(
+            kind="ruling",
+            external_id=f"ruling:F{flag_id}",
+            name=name,
+            path=name,
+            content_hash=text_hash(text),
+        )
+        self.set_source_basis(source.id, date, "commish-set")
+        self.replace_records(
+            source.id,
+            [NewRecord("ruling", name, text, meta={"flag": flag_id, "question": flag["question"]})],
+        )
+        self.approve_source(source.id)
+        (record,) = self.records_for_source(source.id)
+        with self._tx() as db:
+            db.execute(
+                """UPDATE flags SET status = 'ruled', ruling_record_id = ?, resolved_at = ?
+                   WHERE id = ?""",
+                (record.id, now_iso(), flag_id),
+            )
+        return record
+
     # Image transcriptions
 
     def save_transcription(

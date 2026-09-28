@@ -13,6 +13,10 @@ Knowledge base (Phase 1):
   comish review-status <slug>      what's citable, pending, and failed
   comish admin                     run the review UI on 127.0.0.1:8788
   comish verify-field <slug> <path> [--unverify]
+
+Evaluation (Phase 2):
+  comish eval <slug> [--repeat 3] [--max-attempts N] [--pause S]
+                                   run the league's cases (resumable) and print the gate report
 """
 
 import argparse
@@ -157,6 +161,42 @@ def _admin_cmd(settings: Settings) -> None:
     uvicorn.run(app, host=settings.admin_host, port=settings.admin_port)
 
 
+def _eval_cmd(settings: Settings, args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    import yaml
+
+    from comish.commands import get_league
+    from comish.evals.cases import ADVERSARIAL_CASES, load_cases
+    from comish.evals.metrics import gate
+    from comish.evals.report import format_report
+    from comish.evals.runner import Checkpoint, always_abstain, run_evals
+
+    get_league(settings, args.slug)
+    league_dir = settings.data_dir / args.slug / "evals"
+    files = [Path(p) for p in args.cases] or sorted(league_dir.glob("*.yaml"))
+    files = [f for f in files if f.name != "verdicts.yaml"]
+    cases = load_cases(*[f for f in files if f.exists()], ADVERSARIAL_CASES)
+    verdicts_path = league_dir / "verdicts.yaml"
+    overrides = yaml.safe_load(verdicts_path.read_text()) if verdicts_path.exists() else {}
+    if args.answerer != "abstain":
+        print("only the always-abstain baseline exists until the Phase 3 pipeline lands")
+        return 2
+    checkpoint = Checkpoint(league_dir / "runs" / f"{args.name}.jsonl")
+    runs = run_evals(
+        cases,
+        always_abstain,
+        checkpoint,
+        repeat=args.repeat,
+        pause_s=args.pause,
+        max_attempts=args.max_attempts,
+        overrides=overrides or {},
+    )
+    result = gate(runs)
+    print(format_report(runs, result))
+    return 0 if result["passed"] else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="comish", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -173,6 +213,14 @@ def main(argv: list[str] | None = None) -> int:
     verify.add_argument("slug")
     verify.add_argument("path")
     verify.add_argument("--unverify", action="store_true")
+    ev = sub.add_parser("eval")
+    ev.add_argument("slug")
+    ev.add_argument("--cases", nargs="*", default=[])
+    ev.add_argument("--answerer", default="abstain", choices=["abstain", "pipeline"])
+    ev.add_argument("--name", default="baseline")
+    ev.add_argument("--repeat", type=int, default=3)
+    ev.add_argument("--max-attempts", type=int, default=None)
+    ev.add_argument("--pause", type=float, default=0.0)
     sub.add_parser("bb-ping")
     sub.add_parser("chats")
     serve = sub.add_parser("serve")
@@ -217,6 +265,8 @@ def main(argv: list[str] | None = None) -> int:
         (store.unverify_field if args.unverify else store.verify_field)(args.path)
         store.close()
         print(("Unverified " if args.unverify else "Verified ") + args.path)
+    elif args.command == "eval":
+        return _eval_cmd(settings, args)
     return 0
 
 

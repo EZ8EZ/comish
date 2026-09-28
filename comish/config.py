@@ -19,6 +19,8 @@ class Settings:
     max_per_sender_per_10min: int = 20
     max_outbound_per_day: int = 100
     log_dir: Path = Path("logs")
+    # Per-league databases, downloaded files and leagues.yaml. Gitignored.
+    data_dir: Path = Path("data")
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -34,4 +36,9 @@ class Settings:
                 env.get("COMISH_MAX_OUTBOUND_PER_DAY", cls.max_outbound_per_day)
             ),
             log_dir=Path(env.get("COMISH_LOG_DIR", str(cls.log_dir))),
+            data_dir=Path(env.get("COMISH_DATA_DIR", str(cls.data_dir))),
         )
+
+    @property
+    def leagues_path(self) -> Path:
+        return self.data_dir / "leagues.yaml"

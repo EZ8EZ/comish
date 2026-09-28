@@ -1,0 +1,24 @@
+# Copy to data/leagues.yaml (gitignored) or create it with `comish league add`.
+# Never commit the real file: it contains chat GUIDs and phone numbers.
+leagues:
+  - slug: football
+    name: Example Dynasty League
+    sport: nfl
+    sleeper_league_id: "1000000000000000001"
+    drive_folder_id: 1AbCdEfGhIjKlMnOpQrStUvWxYz
+    chat_guid: "iMessage;+;chat000000000000000001"
+    ruling_authority: commissioner
+    flag_handles:
+      - "+15555550100"
+
+  - slug: hoops
+    name: Example Hoops League
+    sport: nba
+    sleeper_league_id: "1000000000000000002"
+    # No Drive folder: Sleeper settings only.
+    chat_guid: "iMessage;+;chat000000000000000002"
+    # The flag recipient relays rulings from the actual commissioner.
+    ruling_authority: relay
+    commissioner_name: League Commissioner
+    flag_handles:
+      - "+15555550100"

@@ -44,3 +44,26 @@ cases:
     question: When is the trade deadline, and who is going to win the title this year?
     expected: abstain
     category: partially_answerable
+  # Anticipated by the commissioner (2026-09-29). Outside v1: live data and NFL stats.
+  - id: adv-stats-yac
+    question: Which RB had the highest YAC over the past 2 seasons?
+    expected: abstain
+    category: out_of_corpus
+    notes: NFL player stats are not league records; Sleeper's stats endpoint is undocumented.
+  - id: adv-live-points-to-win
+    question: How many more points would I need to score to win this week?
+    expected: abstain
+    category: live_data_out_of_scope
+  - id: adv-live-current-scores
+    question: What are the current scores?
+    expected: abstain
+    category: live_data_out_of_scope
+  - id: adv-live-players-left
+    question: Who has players left to play this week?
+    expected: abstain
+    category: live_data_out_of_scope
+  - id: adv-hypothetical-stat-line
+    question: What combination of plays does Zay Flowers need to score 30 points?
+    expected: abstain
+    category: uncovered_hypothetical
+    notes: Scoring rules are citable; invented stat lines are not. A per-stat scoring question is answerable.

@@ -180,6 +180,16 @@ def create_admin_app(
         check_csrf(csrf)
         return record_action(slug, record_id, lambda s: s.edit_record_text(record_id, text))
 
+    @app.post("/l/{slug}/r/{record_id}/supersede", dependencies=[Auth])
+    def supersede(slug: str, record_id: int, csrf: Csrf, by: Annotated[str, Form()]) -> Any:
+        check_csrf(csrf)
+        return record_action(slug, record_id, lambda s: s.supersede(record_id, by))
+
+    @app.post("/l/{slug}/r/{record_id}/unsupersede", dependencies=[Auth])
+    def unsupersede(slug: str, record_id: int, csrf: Csrf) -> Any:
+        check_csrf(csrf)
+        return record_action(slug, record_id, lambda s: s.unsupersede(record_id))
+
     @app.get("/l/{slug}/fields", response_class=HTMLResponse, dependencies=[Auth])
     def fields_page(request: Request, slug: str) -> HTMLResponse:
         league, store = league_store(slug)

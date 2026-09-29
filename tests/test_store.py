@@ -219,3 +219,38 @@ def test_proposal_never_overrides_approved_or_commissioner_dates(store):
     assert not store.propose_source_date(source.id, "2026-01-01")
     assert store.get_source(source.id).effective_date == "2025-01-01"
     assert store.propose_source_date(source.id, "2025-01-01")  # same date is fine
+
+
+def _approved_doc(store, external_id, text, date):
+    source, _ = store.upsert_source(kind="gdoc", external_id=external_id, name=external_id)
+    store.replace_records(source.id, [NewRecord("doc_section", f"{external_id} > S", text)])
+    if date:
+        store.set_source_date(source.id, date)
+    else:
+        store.mark_undated(source.id)
+    store.approve_source(source.id)
+    return store.records_for_source(source.id)[0]
+
+
+def test_supersession_rules(store):
+    old = _approved_doc(store, "old", "Two taxi slots per team.", "2023-06-01")
+    new = _approved_doc(store, "new", "Vote: taxi goes to three slots.", "2024-08-10")
+    undated = _approved_doc(store, "undated", "Taxi is four slots.", None)
+
+    with pytest.raises(ReviewError, match="undated"):
+        store.supersede(old.id, undated.label)
+    with pytest.raises(ReviewError, match="older"):
+        store.supersede(new.id, old.label)
+    with pytest.raises(ReviewError, match="itself"):
+        store.supersede(old.id, old.label)
+    with pytest.raises(ReviewError, match="not a record"):
+        store.supersede(old.id, "R-9999")
+
+    store.supersede(old.id, new.label.lower())
+    got = store.get_record(old.id)
+    assert (got.status, got.superseded_by) == ("superseded", new.id)
+    assert old.id not in {r.id for r in store.citable_records()}
+    assert old.id in {r.id for r in store.context_records()}  # still visible as history
+
+    store.unsupersede(old.id)
+    assert old.id in {r.id for r in store.citable_records()}

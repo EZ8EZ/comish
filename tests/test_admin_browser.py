@@ -114,3 +114,17 @@ def test_verify_sleeper_field(site):
     page.get_by_test_id("notice").wait_for()
     seasons = sorted(r.season for r in store.citable_records() if "Waiver type" in r.text)
     assert seasons == ["2024", "2025", "2026"]
+
+
+def test_mark_superseded_from_the_ui(site):
+    page, url, store = site
+    open_source(page, url, "Constitution")
+    page.get_by_role("button", name="Mark undated").click()
+    page.get_by_role("button", name="Approve source").click()
+    records = store.records_for_source(store.source_by_external_id("doc1").id)
+    old, newer = records[0], records[1]
+    # Undated records can't supersede anything: the UI shows the rule's error.
+    page.get_by_label(f"Superseded by for {old.label}").fill(newer.label)
+    page.get_by_role("button", name="Mark superseded").first.click()
+    assert "undated" in page.get_by_test_id("error").inner_text()
+    assert store.get_record(old.id).status == "approved"

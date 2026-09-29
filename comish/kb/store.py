@@ -473,6 +473,49 @@ class LeagueStore:
                 (text, text_hash(text), ts, record_id),
             )
 
+    def _effective_date(self, record: Record) -> str | None:
+        return record.effective_date or self.get_source(record.source_id).effective_date
+
+    def supersede(self, record_id: int, by_label: str) -> None:
+        """Mark a record as replaced by a later one (precedence rule 2, commissioner-approved).
+
+        The replacement must be an approved, dated record in this league, dated no
+        earlier than the one it replaces. Undated records can never supersede.
+        """
+        old = self.get_record(record_id)
+        new = self.record_by_label(by_label.strip().upper())
+        if new is None:
+            raise ReviewError(f"{by_label} is not a record in this league")
+        if new.id == old.id:
+            raise ReviewError("a record can't supersede itself")
+        if old.status != "approved":
+            raise ReviewError(
+                f"{old.label} is {old.status}; only approved records can be superseded"
+            )
+        if new.status != "approved" or self.get_source(new.source_id).status != "approved":
+            raise ReviewError(f"{new.label} must be approved first")
+        new_date, old_date = self._effective_date(new), self._effective_date(old)
+        if new_date is None:
+            raise ReviewError(f"{new.label} is undated; undated records can't supersede anything")
+        if old_date is not None and new_date < old_date:
+            raise ReviewError(f"{new.label} ({new_date}) is older than {old.label} ({old_date})")
+        ts = now_iso()
+        with self._tx() as db:
+            db.execute(
+                """UPDATE records SET status = 'superseded', superseded_by = ?, reviewed_at = ?,
+                   updated_at = ? WHERE id = ?""",
+                (new.id, ts, ts, old.id),
+            )
+
+    def unsupersede(self, record_id: int) -> None:
+        ts = now_iso()
+        with self._tx() as db:
+            db.execute(
+                """UPDATE records SET status = 'approved', superseded_by = NULL, updated_at = ?
+                   WHERE id = ? AND status = 'superseded'""",
+                (ts, record_id),
+            )
+
     def citable_records(self) -> list[Record]:
         rows = self._query(
             """SELECT r.* FROM records r JOIN sources s ON s.id = r.source_id

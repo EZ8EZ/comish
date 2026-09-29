@@ -512,6 +512,8 @@ Managers want quick answers to questions that are buried in the Sleeper app, lik
 - League records: highest single-week score, highest scoring season, and so on.
 - Every trade, with its date and the assets exchanged.
 - Draft results, pick by pick.
+- **Season and league aggregates:** average margin of victory, and the weekly league median in every season since the league started (when `league_average_match` is on).
+- **Rookie draft results by season:** including the #1 overall pick.
 - **Settings timeline:** a diff between consecutive seasons' snapshots, e.g. "`waiver_type` 0 → 2 between the 2024 and 2025 seasons", with decoded labels once you've verified each field.
 
 **Honest limits, encoded in the facts themselves:**
@@ -528,6 +530,19 @@ Managers want quick answers to questions that are buried in the Sleeper app, lik
 - a question about the current, unfinished season
 - "when did X change" where only the season is known: the answer must say "between the 2024 and 2025 seasons", never a date
 - a player who scored heavily from the bench (must not count as a top scorer)
+
+### Question scope (from the commissioner's anticipated questions, 2026-09-29)
+| Kind | Examples | Handled by | When |
+|---|---|---|---|
+| League policy | trading future picks the app doesn't show, lottery odds by max PF, payouts | approved docs, sheets, votes, rulings | v1 |
+| App-enforced settings | playoff teams, median game, scoring per stat | verified Sleeper fields | v1 |
+| History | average margin of victory last season, weekly median since inception, #1 rookie pick each year | deterministic history facts | Phase 3b |
+| Live data | current scores, points needed to win, players left to play | live matchups plus the NFL schedule | v2 at the earliest; always abstains in v1 |
+| NFL stats and hypotheticals | highest RB YAC, stat lines for 30 points | not league records | abstains; not planned |
+
+Notes on sources:
+- [certain] Seeding and tiebreakers must come from league docs, because Sleeper's `playoff_seed_type` value is undocumented.
+- [certain] Sleeper's draft settings have no lottery fields, so lottery rules must come from docs too.
 
 ## 6. Open questions (answer before the phase listed)
 - **Q1: RESOLVED (2026-09-28).** You accepted that on the Gemini free tier Google may use league content to improve its products. The free plan proceeds as written. Cropping names out of screenshots stays optional.

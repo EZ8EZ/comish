@@ -7,12 +7,18 @@ fields:
   - {path: scoring_settings.pass_fd, label: Points per passing first down, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.bonus_pass_yd_300, label: Bonus for a 300-399 yard passing game, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.bonus_pass_yd_400, label: Bonus for a 400+ yard passing game, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.pass_cmp_40p, label: Bonus per 40+ yard completion, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.pass_td_40p, label: Bonus per 40+ yard passing TD, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.pass_td_50p, label: Bonus per 50+ yard passing TD, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.rush_yd, label: Points per rushing yard, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.rush_td, label: Points per rushing TD, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.rush_2pt, label: Points per rushing 2-point conversion, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.rush_fd, label: Points per rushing first down, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.bonus_rush_yd_100, label: Bonus for a 100-199 yard rushing game, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.bonus_rush_yd_200, label: Bonus for a 200+ yard rushing game, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rush_40p, label: Bonus per 40+ yard rush, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rush_td_40p, label: Bonus per 40+ yard rushing TD, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rush_td_50p, label: Bonus per 50+ yard rushing TD, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.rec, label: Points per reception, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.rec_yd, label: Points per receiving yard, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.rec_td, label: Points per receiving TD, kind: points, meaning: community, app_enforced: true}
@@ -23,6 +29,9 @@ fields:
   - {path: scoring_settings.bonus_rec_wr, label: Extra points per reception for wide receivers, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.bonus_rec_yd_100, label: Bonus for a 100-199 yard receiving game, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.bonus_rec_yd_200, label: Bonus for a 200+ yard receiving game, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rec_40p, label: Bonus per 40+ yard reception, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rec_td_40p, label: Bonus per 40+ yard receiving TD, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.rec_td_50p, label: Bonus per 50+ yard receiving TD, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.fum, label: Points per fumble, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.fum_lost, label: Points per fumble lost, kind: points, meaning: community, app_enforced: true}
   - {path: scoring_settings.xpm, label: Points per extra point made, kind: points, meaning: community, app_enforced: true}

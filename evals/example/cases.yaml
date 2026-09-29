@@ -18,3 +18,13 @@ cases:
     expected: abstain
     category: superseded_rule
     notes: The 2023 doc says 2, a 2024 vote screenshot says 3, and no supersession link is approved yet.
+  - id: ex-bonus-change
+    question: When did we remove scoring bonuses for big plays?
+    expected: answer
+    category: history_lookup
+    must_include: ["2024", "2025"]
+    acceptable_sources: ["sleeper:scoring_settings.rec_40p", "sleeper:scoring_settings.rush_40p"]
+    notes: >-
+      Sleeper only knows the season, so the right answer is "between the 2024 and 2025
+      seasons", never a date, unless an approved vote or ruling dates it. It must also
+      correct the premise: 40+ yard bonuses were removed, 50+ yard TD bonuses only cut.

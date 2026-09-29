@@ -1,0 +1,20 @@
+# A synthetic example set (no real league data) showing the case format.
+# Real sets go in data/<slug>/evals/cases.yaml.
+cases:
+  - id: ex-deadline
+    question: When is the trade deadline?
+    expected: answer
+    category: setting_lookup
+    must_include: ["week 11"]
+    acceptable_sources: ["sleeper:settings.trade_deadline"]
+  - id: ex-taxi
+    question: Can taxi squad players be traded during the season?
+    expected: answer
+    category: rule_lookup
+    must_include: ["offseason"]
+    acceptable_sources: ["Constitution > Trades > 4.2"]
+  - id: ex-superseded
+    question: How many taxi slots does each team get?
+    expected: abstain
+    category: superseded_rule
+    notes: The 2023 doc says 2, a 2024 vote screenshot says 3, and no supersession link is approved yet.

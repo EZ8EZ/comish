@@ -14,11 +14,21 @@ class Settings:
     bluebubbles_url: str = "http://127.0.0.1:1234"
     # "apple-script" (SIP on) or "private-api" (SIP off, BlueBubbles helper installed).
     send_method: str = "apple-script"
+    # "pong" (Phase 0 spike), "shadow" (answers DM'd to the commissioner only) or "live".
+    mode: str = "pong"
     # Only these chat GUIDs are ever answered. Empty means the bot answers nowhere.
     allowed_chat_guids: frozenset[str] = field(default_factory=frozenset)
     max_per_sender_per_10min: int = 20
     max_outbound_per_day: int = 100
     log_dir: Path = Path("logs")
+    # Per-league databases, downloaded files and leagues.yaml. Gitignored.
+    data_dir: Path = Path("data")
+    # Free-tier availability changes; check the Gemini pricing page before changing this.
+    gemini_model: str = "gemini-2.5-flash"
+    # A different model checks answers, so generator and verifier errors are less correlated.
+    gemini_verifier_model: str = "gemini-2.5-pro"
+    admin_host: str = "127.0.0.1"
+    admin_port: int = 8788
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -26,6 +36,7 @@ class Settings:
         return cls(
             bluebubbles_url=env.get("COMISH_BLUEBUBBLES_URL", cls.bluebubbles_url).rstrip("/"),
             send_method=env.get("COMISH_SEND_METHOD", cls.send_method),
+            mode=env.get("COMISH_MODE", cls.mode),
             allowed_chat_guids=_csv(env.get("COMISH_ALLOWED_CHAT_GUIDS", "")),
             max_per_sender_per_10min=int(
                 env.get("COMISH_MAX_PER_SENDER_PER_10MIN", cls.max_per_sender_per_10min)
@@ -34,4 +45,15 @@ class Settings:
                 env.get("COMISH_MAX_OUTBOUND_PER_DAY", cls.max_outbound_per_day)
             ),
             log_dir=Path(env.get("COMISH_LOG_DIR", str(cls.log_dir))),
+            data_dir=Path(env.get("COMISH_DATA_DIR", str(cls.data_dir))),
+            gemini_model=env.get("COMISH_GEMINI_MODEL", cls.gemini_model),
+            gemini_verifier_model=env.get(
+                "COMISH_GEMINI_VERIFIER_MODEL", cls.gemini_verifier_model
+            ),
+            admin_host=env.get("COMISH_ADMIN_HOST", cls.admin_host),
+            admin_port=int(env.get("COMISH_ADMIN_PORT", cls.admin_port)),
         )
+
+    @property
+    def leagues_path(self) -> Path:
+        return self.data_dir / "leagues.yaml"

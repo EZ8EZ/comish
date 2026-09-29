@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Sleeper fields: {{ league.name }}{% endblock %}
+{% block nav %}<a href="/l/{{ league.slug }}">{{ league.name }}</a> <a href="/l/{{ league.slug }}/fields">Sleeper fields</a>{% endblock %}
+{% block content %}
+<h1>Sleeper fields</h1>
+<p class="muted">Check each value against the Sleeper app (League, then Settings). A field becomes citable, for
+every season, only after you verify it. Meanings marked "community" come from community sources, not Sleeper's docs.</p>
+<div class="scroll">
+<table data-testid="fields">
+  <tr><th>Field</th>{% for season in seasons %}<th>{{ season }}</th>{% endfor %}<th>Verified</th></tr>
+  {% for row in rows %}{% set f = row.field %}
+  <tr data-testid="field-{{ f.path }}">
+    <td><strong>{{ f.label }}</strong><div class="muted">{{ f.path }}, meaning: {{ f.meaning }}{% if f.note %}. {{ f.note }}{% endif %}</div></td>
+    {% for v in row.cells %}<td>{{ v.value if v.value is not none else '' }}</td>{% endfor %}
+    <td>
+      {% if row.verified %}
+      <span class="pill approved">verified</span>
+      <form class="inline" method="post" action="/l/{{ league.slug }}/fields/unverify">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="path" value="{{ f.path }}">
+        <button type="submit">Unverify</button>
+      </form>
+      {% else %}
+      <form class="inline" method="post" action="/l/{{ league.slug }}/fields/verify">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="path" value="{{ f.path }}">
+        <button class="primary" type="submit">Verify</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td class="muted">No Sleeper data yet. Run <code>comish sync {{ league.slug }}</code>.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

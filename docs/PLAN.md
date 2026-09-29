@@ -454,6 +454,42 @@ What this changes in Phase 1:
 
 **Consequence:** [likely] most real NSL questions are about policy (tanking, dues, trade vetoes, taxi rules beyond the slot count). Those will abstain and be flagged to you until relayed rulings build up the record. Expect a high abstain rate at first. That's correct behavior, not a bug.
 
+## 5b-status. Phase 1 progress (PR EZ8EZ/comish#5) and remaining build
+**Done and pushed:**
+- **Step 1, the knowledge base and league config.**
+  - League config lives in `comish/leagues.py`. The real file is `data/leagues.yaml`, which is gitignored because it holds chat GUIDs and phone numbers; `config/leagues.example.yaml` is committed.
+  - The store is `comish/kb/schema.py` + `store.py`. Its review rules are enforced in code, and 32 tests cover them.
+- **Step 2, Sleeper.**
+  - `comish/ingest/sleeper.py` is the client and walks each league's season chain.
+  - `comish/ingest/fields.py` plus `sleeper_fields/{common,nfl,nba}.yaml` form the field dictionary.
+  - Setting records are citable only after you verify the field.
+  - A dry run on Dynasty Pigskin gave 3 seasons and 179 records, and correctly showed rolling waivers in 2024 and FAAB from 2025. None of that output was committed.
+
+**Also done (steps 3 to 6, all on PR #5):**
+- **Drive ingestion:** Docs split into sections, PDFs by page, Sheets by row across every tab. Dates are found by code only. The sync is idempotent and reports every file.
+- **Gemini provider and two-pass screenshot transcription:** disagreements between the passes are flagged, and a date is proposed only when both passes agree on it.
+- **Admin review UI:** plain forms, auth plus CSRF, and Playwright end-to-end tests.
+- **CLI:** `league add`, `sync`, `review-status`, `admin` and `verify-field`, plus `deploy/google-setup.md`.
+- **Real read-only run** through the CLI, saved to a scratch directory and not committed:
+  - Dynasty Pigskin: 3 seasons, 179 setting records.
+  - NSL: 5 seasons, 155 setting records.
+  - Verifying one NSL field made exactly its 5 season records citable.
+
+**Also built on PR #5, ahead of the Mac work:**
+- **Phase 2 harness:** the case format, a conservative grader, gate metrics with the zero-failure 95% upper bound, a resumable runner that respects free-tier quotas, the always-abstain baseline, and generic adversarial cases.
+- **Phase 3 pipeline:**
+  - the full-context corpus
+  - the structured draft, then the deterministic checks, then the independent verifier, then the reply
+  - an audit log of every attempt
+  - the commissioner desk: flags, two-step rulings, relay citations
+- **Phase 4 modes:** shadow and live, wired into the webhook server.
+
+**Phase 1 exit criteria that need you:**
+- create the service account and share the Dynasty Pigskin folder
+- run `comish sync football`
+- review and date the backlog in the admin UI
+- verify the Sleeper fields
+
 ## 5c. League history (Phase 3b)
 Managers want quick answers to questions that are buried in the Sleeper app, like "what were the semifinal matchups two years ago?", "who was the highest-scoring player on each team?" or "when did we switch to FAAB?".
 

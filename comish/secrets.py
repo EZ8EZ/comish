@@ -28,3 +28,10 @@ def get_secret(name: str) -> str:
     if not value:
         raise MissingSecret(f"Secret '{name}' not found. Run: keyring set {KEYRING_SERVICE} {name}")
     return value
+
+
+def optional_secret(name: str) -> str | None:
+    try:
+        return get_secret(name)
+    except MissingSecret:
+        return None

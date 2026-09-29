@@ -4,16 +4,12 @@ Runs the comish app under uvicorn, points it at a fake BlueBubbles server that r
 sends, then delivers webhooks over real HTTP exactly as BlueBubbles would.
 """
 
-import socket
-import threading
 import time
 from collections.abc import Iterator
-from contextlib import contextmanager
 from typing import Any
 
 import httpx
 import pytest
-import uvicorn
 from fastapi import FastAPI, Request
 
 from comish.audit import EventLog
@@ -21,33 +17,10 @@ from comish.config import Settings
 from comish.server import create_app
 from comish.transport.bluebubbles import BlueBubblesTransport
 from tests.fixtures import GROUP_GUID, new_message
+from tests.servers import serve, wait_for
 
 PASSWORD = "bb-password"
 TOKEN = "hook-token"
-
-
-def _free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return int(s.getsockname()[1])
-
-
-@contextmanager
-def serve(app: FastAPI) -> Iterator[str]:
-    port = _free_port()
-    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error"))
-    thread = threading.Thread(target=server.run, daemon=True)
-    thread.start()
-    deadline = time.monotonic() + 10
-    while not server.started:
-        if time.monotonic() > deadline:
-            raise RuntimeError("server did not start")
-        time.sleep(0.01)
-    try:
-        yield f"http://127.0.0.1:{port}"
-    finally:
-        server.should_exit = True
-        thread.join(timeout=10)
 
 
 def fake_bluebubbles(sent: list[dict[str, Any]]) -> FastAPI:
@@ -61,14 +34,6 @@ def fake_bluebubbles(sent: list[dict[str, Any]]) -> FastAPI:
         return {"status": 200, "message": "Message sent!", "data": {}}
 
     return app
-
-
-def wait_for(predicate: Any, timeout: float = 5.0) -> None:
-    deadline = time.monotonic() + timeout
-    while not predicate():
-        if time.monotonic() > deadline:
-            raise AssertionError("condition not met in time")
-        time.sleep(0.02)
 
 
 @pytest.fixture

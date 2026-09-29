@@ -1,0 +1,15 @@
+# Sleeper NBA scoring settings (added to common.yaml). See common.yaml for the format.
+fields:
+  - {path: scoring_settings.pts, label: Points per point scored, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.reb, label: Points per rebound, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.ast, label: Points per assist, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.stl, label: Points per steal, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.blk, label: Points per block, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.to, label: Points per turnover, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.tpm, label: Points per three-pointer made, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.dd, label: Bonus for a double-double, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.td, label: Bonus for a triple-double, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.tf, label: Points per technical foul, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.ff, label: Points per flagrant foul, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.bonus_pt_40p, label: Bonus for a 40+ point game, kind: points, meaning: community, app_enforced: true}
+  - {path: scoring_settings.bonus_pt_50p, label: Bonus for a 50+ point game, kind: points, meaning: community, app_enforced: true}

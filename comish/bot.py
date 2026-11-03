@@ -59,7 +59,14 @@ class Bot:
         out: Outgoing = []
         if self.mode == "live":
             out.append((msg.chat_guid, result.reply))
-        if result.decision == "abstained":
+        if result.out_of_scope:
+            if self.mode == "shadow":
+                out += self._to_handles(
+                    league,
+                    f"[shadow, nothing posted] [{league.name}] {msg.sender or 'someone'} asked: "
+                    f'"{question}"\nI would reply (out of scope, no flag):\n{result.reply}',
+                )
+        elif result.decision == "abstained":
             flag_id = self.ops.new_flag(league.slug)
             self.open_store(league.slug).create_flag(flag_id, question, msg.sender, result.reason)
             text = flag_message(flag_id, league, msg.sender, question, result.reason)

@@ -25,6 +25,7 @@ from comish.answer.prompts import (
     verifier_prompt,
 )
 from comish.answer.render import ABSTAIN_REPLY, render_answer
+from comish.answer.scope import OUT_OF_SCOPE_REPLY, out_of_scope
 from comish.kb.store import LeagueStore
 from comish.leagues import League
 from comish.llm.base import LLM, LLMError
@@ -46,6 +47,8 @@ class AnswerResult:
     draft: dict[str, Any] | None = None
     checks: list[str] = field(default_factory=list)
     verifier: dict[str, Any] | None = None
+    # An abstain on a question v1 can never answer: replied to, but not flagged.
+    out_of_scope: bool = False
 
 
 def verifier_passes(verdict: dict[str, Any], claim_count: int) -> list[str]:
@@ -135,6 +138,11 @@ class AnswerPipeline:
     def _answer(self, question: str, corpus: Corpus) -> AnswerResult:
         if not question.strip():
             return self._abstain("empty question")
+        kind = out_of_scope(question)
+        if kind:
+            return AnswerResult(
+                "abstained", OUT_OF_SCOPE_REPLY, f"out of scope: {kind}", out_of_scope=True
+            )
         if not corpus.entries:
             return self._abstain("no approved records in this league yet")
         try:

@@ -213,3 +213,23 @@ def test_dm_from_non_commissioner_is_ignored(world):
     )
     assert resp.json()["reason"] == "dm_not_commissioner"
     assert transport.sent == []
+
+
+def test_live_out_of_scope_replies_without_flag_or_dm(world):
+    make, gen, _, _, store = world
+    client, transport = make("live")
+    post(client, question("What are the current scores?"))
+    ((chat, text),) = transport.sent
+    assert chat == GROUP_GUID and text.startswith("That's live or outside league data")
+    assert store.open_flags() == []
+    assert gen == []  # no model was consulted
+
+
+def test_shadow_out_of_scope_dms_without_flag(world):
+    make, _, _, _, store = world
+    client, transport = make("shadow")
+    post(client, question("What are the current scores?"))
+    ((chat, text),) = transport.sent
+    assert chat == dm_chat_guid(ME)
+    assert text.startswith("[shadow, nothing posted]") and "no flag" in text
+    assert store.open_flags() == []

@@ -248,6 +248,16 @@ def _eval_cmd(settings: Settings, args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from comish.leagues import LeagueConfigError
+
+    try:
+        return _run(argv)
+    except LeagueConfigError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+
+def _run(argv: list[str] | None) -> int:
     parser = argparse.ArgumentParser(
         prog="comish", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -301,8 +311,9 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "review-status":
         from comish.commands import get_league, review_status
 
+        found = get_league(settings, args.slug)
         store = _store(settings, args.slug)
-        print(review_status(store, get_league(settings, args.slug)))
+        print(review_status(store, found))
         store.close()
     elif args.command == "admin":
         _admin_cmd(settings)
@@ -323,9 +334,10 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "ask":
         from comish.commands import build_pipeline, format_answer, get_league
 
+        found = get_league(settings, args.slug)
         store = _store(settings, args.slug)
         try:
-            pipeline = build_pipeline(settings, get_league(settings, args.slug), store)
+            pipeline = build_pipeline(settings, found, store)
             print(format_answer(pipeline.answer(args.question, asked_by="cli")))
         finally:
             store.close()

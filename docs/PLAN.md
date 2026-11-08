@@ -519,8 +519,8 @@ Managers want quick answers to questions that are buried in the Sleeper app, lik
 **Honest limits, encoded in the facts themselves:**
 - **Settings changes are known only to the season.** [certain] Sleeper doesn't timestamp them. A setting change is dated only when an approved doc, vote or ruling gives a date, and it's cited as that source, never as Sleeper.
 - **Team identity is fixed per season.** Owners and team names change in dynasty leagues (orphan takeovers, renames), so every fact is attributed to the team *as it was that season*.
-  - [guessing] Whether the `rosters` endpoint of a completed league still reflects that season's owners is unverified. It gets checked against the draft and transaction history on your league's chain before any ownership fact becomes citable.
-- **The in-progress season is excluded** from season facts until its bracket is final. Weekly facts for weeks already played are allowed.
+  - Whether the `rosters` endpoint of a completed league still shows that season's owners is checked in code against that season's draft picks and trades before any fact is written (see 5d). On both real chains every season passed.
+- **The in-progress season is excluded** from season facts until it is complete. (Decided 2026-09-29: completed seasons only, so there are no weekly facts for a season in progress.)
 
 **History eval cases**, added to each league's set:
 - ordinary lookups (the semifinals two years ago, each team's top scorer, when a trade happened)
@@ -543,6 +543,31 @@ Managers want quick answers to questions that are buried in the Sleeper app, lik
 Notes on sources:
 - [certain] Seeding and tiebreakers must come from league docs, because Sleeper's `playoff_seed_type` value is undocumented.
 - [certain] Sleeper's draft settings have no lottery fields, so lottery rules must come from docs too.
+
+## 5d. Phase 3b as built (2026-11-08)
+**Decisions:** you approve each completed season's history as one source in the admin UI (nothing is citable before that); a team's top scorer counts regular-season started points only; completed seasons only.
+
+**What it does.** `comish sync <slug>` now also fetches each completed season from Sleeper (`comish/ingest/history_sync.py`) and `comish/ingest/history.py` turns it into short fact records under the source `history:<season>`:
+- regular-season head-to-head records (explicitly not the playoff seeding), and every playoff game with its score, labeled from how the bracket feeds itself (championship, semifinal, quarterfinal, placement games), plus the champion and final placements
+- per team, the top regular-season started scorer, with ties listed and empty lineup slots never counted
+- average margin of victory, weekly league median, highest single-week score
+- every trade, with its UTC date and assets (players, picks, FAAB)
+- each draft by round, plus a separate "#1 overall pick" fact; a draft is called a rookie draft only when Sleeper marks it rookies-only
+- settings changes between consecutive seasons, worded "between the X and Y seasons", never with a date. A value is decoded into words only when you have verified that field.
+
+**Two checks before a season is written** (reported in the sync output, never silent):
+1. **Owners confirmed.** Each draft pick's picker and each trade's creator must own the roster that took part, with at least one piece of evidence. Failing this skips the season.
+2. **Points reproduce Sleeper's totals.** The regular-season weeks must add up to each roster's Sleeper points-for. If they don't, Sleeper's data disagrees with itself, so every fact computed from matchup scores is withheld (standings, margins, medians, top scorers, playoff scores) and the rest is kept.
+
+**Real-data dry run (read-only, nothing committed):**
+- Dynasty Pigskin: 2024 and 2025 written (120 records, about 9.5k tokens). In 2024, roster 2's weekly scores sum to 1723.14 but Sleeper's roster total says 1722.14, so 2024's matchup-based facts are withheld. 2025 passed in full.
+- NSL Fantasy Hoops: 2022 to 2025 all written (203 records, about 12.5k tokens). NSL's `playoff_week_start` changed from 18 to 21 between 2022 and 2023, which earlier notes had missed.
+- Both leagues' champions and #1 picks were checked against the raw Sleeper brackets and drafts.
+
+**Storage.** Migration 4 adds the `history` source kind and the `history_fact` record type by rebuilding `sources` and `records` (SQLite can't alter a CHECK constraint). The store turns foreign keys off around migrations and checks every constraint before committing. An unchanged re-sync changes nothing; a changed fact returns to review.
+
+## 5e. Out-of-scope replies and the cold-start test (done, 2026-11-03)
+Live scores, NFL stat leaders, invented stat lines and "who owns my pick right now" get a plain "I don't cover that" reply and no commissioner flag (`comish/answer/scope.py`, a short and deliberately narrow pattern list). `tests/test_cold_start.py` covers an empty data directory, and found that an unknown league slug crashed the CLI.
 
 ## 6. Open questions (answer before the phase listed)
 - **Q1: RESOLVED (2026-09-28).** You accepted that on the Gemini free tier Google may use league content to improve its products. The free plan proceeds as written. Cropping names out of screenshots stays optional.

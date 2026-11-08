@@ -72,6 +72,7 @@ flowchart LR
 | 1 | Ingestion and review: Drive, screenshots, Sleeper, admin review UI | **Built, awaiting Google setup and first review** |
 | 2 | Eval harness and labeled question set | **Harness built**; needs your real Q&A pairs |
 | 3 | Q&A pipeline with verification, abstention and commissioner tools | **Built**; must pass the eval gate |
+| 3b | League history: brackets, top scorers, trades, drafts, settings changes | **Built**; each season is approved in the review UI |
 | 4 | Live in the football league (shadow mode first) | Shadow and live modes built; runs on the bot Mac |
 | 5 | Second league (basketball) | Planned |
 

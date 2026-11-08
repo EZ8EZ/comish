@@ -28,3 +28,24 @@ cases:
       Sleeper only knows the season, so the right answer is "between the 2024 and 2025
       seasons", never a date, unless an approved vote or ruling dates it. It must also
       correct the premise: 40+ yard bonuses were removed, 50+ yard TD bonuses only cut.
+  - id: ex-history-semifinal
+    question: Who played in the semifinals in 2025?
+    expected: answer
+    category: history_lookup
+    must_include: ["Semifinal"]
+    acceptable_sources: ["history:2025"]
+    notes: A computed bracket fact, cited as league history from Sleeper data once the season is approved.
+  - id: ex-history-top-scorer
+    question: Who was the top scorer on my team in 2025?
+    expected: answer
+    category: history_lookup
+    must_include: ["points"]
+    acceptable_sources: ["history:2025"]
+    notes: >-
+      Started points only, regular season. A bench player who outscored every starter must
+      not be named; a tie must list every tied player.
+  - id: ex-history-current-season
+    question: Who has scored the most points so far this season?
+    expected: abstain
+    category: live_data_out_of_scope
+    notes: History covers completed seasons only, so the in-progress season has no facts.

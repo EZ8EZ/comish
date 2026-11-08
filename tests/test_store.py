@@ -254,3 +254,46 @@ def test_supersession_rules(store):
 
     store.unsupersede(old.id)
     assert old.id in {r.id for r in store.citable_records()}
+
+
+def test_migration_4_keeps_every_row_and_allows_history(tmp_path):
+    import sqlite3
+
+    from comish.kb.schema import MIGRATIONS
+
+    path = tmp_path / "football"
+    path.mkdir()
+    db = sqlite3.connect(path / "league.db", isolation_level=None)
+    db.execute("CREATE TABLE schema_version (version INTEGER NOT NULL)")
+    for sql in MIGRATIONS[:3]:
+        for statement in (s.strip() for s in sql.split(";")):
+            if statement:
+                db.execute(statement)
+    db.execute("INSERT INTO schema_version VALUES (3)")
+    db.execute(
+        "INSERT INTO sources (id, kind, external_id, name, status, created_at, updated_at) "
+        "VALUES (1, 'gdoc', 'd', 'Constitution', 'approved', 't', 't')"
+    )
+    for rid, by in ((1, None), (2, 1)):
+        db.execute(
+            "INSERT INTO records (id, source_id, record_type, section_path, text, text_hash, "
+            "status, superseded_by, created_at, updated_at) "
+            "VALUES (?, 1, 'doc_section', ?, 'x', 'h', 'approved', ?, 't', 't')",
+            (rid, f"S{rid}", by),
+        )
+    db.execute(
+        "INSERT INTO flags (id, question, reason, ruling_record_id, created_at) "
+        "VALUES (1, 'q', 'r', 2, 't')"
+    )
+    db.close()
+
+    store = LeagueStore(tmp_path, "football")
+    assert [s.name for s in store.list_sources()] == ["Constitution"]
+    assert [r.id for r in store.records_for_source(1)] == [1, 2]
+    assert store.get_record(2).superseded_by == 1
+    assert store.get_flag(1)["ruling_record_id"] == 2
+    history, _ = store.upsert_source(kind="history", external_id="history:2024", name="2024")
+    store.replace_records(history.id, [NewRecord("history_fact", "2024 > final", "Fact.")])
+    assert store.records_for_source(history.id)[0].record_type == "history_fact"
+    assert store._db.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+    store.close()

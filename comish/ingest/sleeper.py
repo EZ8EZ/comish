@@ -73,6 +73,31 @@ class SleeperClient:
     def state(self, sport: str) -> dict[str, Any]:
         return dict(self._get(f"state/{sport}"))
 
+    def rosters(self, league_id: str) -> list[dict[str, Any]]:
+        return list(self._get(f"league/{league_id}/rosters") or [])
+
+    def users(self, league_id: str) -> list[dict[str, Any]]:
+        return list(self._get(f"league/{league_id}/users") or [])
+
+    def bracket(self, league_id: str, which: str) -> list[dict[str, Any]]:
+        return list(self._get(f"league/{league_id}/{which}_bracket") or [])
+
+    def matchups(self, league_id: str, week: int) -> list[dict[str, Any]]:
+        return list(self._get(f"league/{league_id}/matchups/{week}") or [])
+
+    def transactions(self, league_id: str, week: int) -> list[dict[str, Any]]:
+        return list(self._get(f"league/{league_id}/transactions/{week}") or [])
+
+    def drafts(self, league_id: str) -> list[dict[str, Any]]:
+        return list(self._get(f"league/{league_id}/drafts") or [])
+
+    def draft_picks(self, draft_id: str) -> list[dict[str, Any]]:
+        return list(self._get(f"draft/{draft_id}/picks") or [])
+
+    def players(self, sport: str) -> dict[str, Any]:
+        """Every player (about 15 MB). Callers cache it; never fetch it per question."""
+        return dict(self._get(f"players/{sport}") or {})
+
     def chain(self, league_id: str) -> list[dict[str, Any]]:
         """The league and every earlier season, newest first."""
         leagues: list[dict[str, Any]] = []

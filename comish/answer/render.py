@@ -19,6 +19,8 @@ def source_line(entry: Entry, quote: str, league: League) -> str:
     quote = normalize(quote)
     if r.record_type == "sleeper_setting":
         return f'Source: Sleeper league settings, {r.season} season: "{quote}"'
+    if r.record_type == "history_fact":
+        return f'Source: league history from Sleeper data, {r.season} season: "{quote}"'
     if r.record_type == "ruling":
         relay = (
             f", relayed from {league.commissioner_name}"

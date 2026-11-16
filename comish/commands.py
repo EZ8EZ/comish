@@ -9,8 +9,9 @@ from typing import TYPE_CHECKING, Any
 
 from comish.config import Settings
 from comish.ingest.drive import DriveClient
+from comish.ingest.history_sync import sync_history
 from comish.ingest.images import Transcriber
-from comish.ingest.sleeper import SleeperClient, find_user_leagues, sync_sleeper
+from comish.ingest.sleeper import SleeperClient, SleeperError, find_user_leagues, sync_sleeper
 from comish.ingest.sync import DriveSync
 from comish.kb.store import LeagueStore, now_iso
 from comish.leagues import (
@@ -111,6 +112,7 @@ def run_sync(
     report["sleeper"] = sync_sleeper(
         store, sleeper, league.sleeper_league_id, league.sport
     ).as_dict()
+    report["history"] = _sync_history(store, league, sleeper)
     if league.drive_folder_id is None:
         report["drive"] = {"skipped": "no Drive folder configured"}
     elif drive is None:
@@ -121,6 +123,14 @@ def run_sync(
     return report
 
 
+def _sync_history(store: LeagueStore, league: League, sleeper: SleeperClient) -> dict[str, Any]:
+    """History is best effort: a Sleeper hiccup here must not lose the settings sync."""
+    try:
+        return sync_history(store, sleeper, league.sport, store.dir).as_dict()
+    except SleeperError as exc:
+        return {"error": str(exc)}
+
+
 def format_sync_report(report: dict[str, Any]) -> str:
     lines = [f"Sync: {report['league']}"]
     s = report["sleeper"]
@@ -129,6 +139,18 @@ def format_sync_report(report: dict[str, Any]) -> str:
         f"{s['snapshots_changed'] or 'none'}; records +{s['records_added']} "
         f"-{s['records_archived']} ={s['records_unchanged']}"
     )
+    h = report.get("history", {})
+    if "error" in h:
+        lines.append(f"  History: failed ({h['error']})")
+    elif h:
+        lines.append(
+            f"  History: seasons {', '.join(h['written']) or 'none'}; records "
+            f"+{h['records_added']} -{h['records_archived']} ={h['records_unchanged']}"
+        )
+        for season, reason in sorted(h["skipped"].items()):
+            lines.append(f"    skipped {season}: {reason}")
+        for season, notes in sorted(h.get("withheld", {}).items()):
+            lines.extend(f"    {season}: {note}" for note in notes)
     drive = report["drive"]
     if "skipped" in drive:
         lines.append(f"  Drive: skipped ({drive['skipped']})")

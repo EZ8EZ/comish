@@ -2,7 +2,7 @@
 
 from typing import Any
 
-PROMPT_VERSION = "2026-09-28.1"
+PROMPT_VERSION = "2026-11-08.1"
 
 GENERATOR_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -88,7 +88,11 @@ Precedence (apply strictly):
    dated record replaces an earlier one only when it clearly addresses the same rule.
 3. Records marked SUPERSEDED are history only and must never be cited.
 4. An UNDATED record can't be shown to be current and can't replace anything.
-5. Use the season a question asks about; with no season, use the most recent season."""
+5. Use the season a question asks about; with no season, use the most recent season.
+6. Records marked "League history (Sleeper)" are past results computed from Sleeper data
+   (brackets, top scorers, trades, drafts, settings changes). They say what happened, not
+   what the rules are. A record naming "Between the X and Y seasons" gives only the two
+   seasons: say "between the X and Y seasons" and never state or imply a date or week."""
 
 GENERATOR_SYSTEM = f"""\
 You are Comish, the rules assistant for the fantasy league "{{league}}" ({{sport}}).

@@ -18,6 +18,7 @@ SOURCE_WORD = {
     "vote": "Screenshot",
     "ruling": "Commissioner ruling",
     "sleeper_setting": "Sleeper league settings",
+    "history_fact": "League history (Sleeper)",
 }
 
 
@@ -41,6 +42,8 @@ class Entry:
         """How eval cases and citations name this record's source."""
         if self.record.record_type == "sleeper_setting":
             return f"sleeper:{self.record.meta.get('path', '')}"
+        if self.record.record_type == "history_fact":
+            return f"history:{self.record.season}"
         return self.record.section_path
 
 
@@ -60,7 +63,7 @@ class Corpus:
 
 def _entry(record: Record, source: Source) -> Entry:
     date = record.effective_date or source.effective_date
-    if record.record_type == "sleeper_setting":
+    if record.record_type in ("sleeper_setting", "history_fact"):
         return Entry(record, source, None, undated=False)
     return Entry(record, source, date, undated=date is None)
 
@@ -68,9 +71,12 @@ def _entry(record: Record, source: Source) -> Entry:
 def _render(entry: Entry) -> str:
     r = entry.record
     parts = [f"[{entry.label}]", SOURCE_WORD.get(r.record_type, r.record_type)]
-    if r.record_type == "sleeper_setting":
+    if r.record_type in ("sleeper_setting", "history_fact"):
         parts.append(f"season={r.season}")
+    if r.record_type == "sleeper_setting":
         parts.append("app_enforced=yes" if r.meta.get("app_enforced") else "app_enforced=no")
+    elif r.record_type == "history_fact":
+        parts.append("computed from Sleeper data, approved by the commissioner")
     else:
         parts.append(f'section="{r.section_path}"')
         parts.append(f"effective={entry.effective_date}" if entry.effective_date else "UNDATED")

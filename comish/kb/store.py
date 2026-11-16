@@ -148,17 +148,26 @@ class LeagueStore:
             self._db.execute("COMMIT")
 
     def _migrate(self) -> None:
-        with self._tx() as db:
-            db.execute("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)")
-            row = db.execute("SELECT version FROM schema_version").fetchone()
-            version = row["version"] if row else 0
-            if row is None:
-                db.execute("INSERT INTO schema_version (version) VALUES (0)")
-            for number, sql in enumerate(MIGRATIONS[version:], start=version + 1):
-                for statement in (s.strip() for s in sql.split(";")):
-                    if statement:
-                        db.execute(statement)
-                db.execute("UPDATE schema_version SET version = ?", (number,))
+        # Table rebuilds need foreign keys off (it can't be changed inside a transaction).
+        # Every constraint is re-checked before the migration commits.
+        self._db.execute("PRAGMA foreign_keys = OFF")
+        try:
+            with self._tx() as db:
+                db.execute("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)")
+                row = db.execute("SELECT version FROM schema_version").fetchone()
+                version = row["version"] if row else 0
+                if row is None:
+                    db.execute("INSERT INTO schema_version (version) VALUES (0)")
+                for number, sql in enumerate(MIGRATIONS[version:], start=version + 1):
+                    for statement in (s.strip() for s in sql.split(";")):
+                        if statement:
+                            db.execute(statement)
+                    db.execute("UPDATE schema_version SET version = ?", (number,))
+                broken = db.execute("PRAGMA foreign_key_check").fetchall()
+                if broken:
+                    raise RuntimeError(f"migration broke {len(broken)} foreign key(s)")
+        finally:
+            self._db.execute("PRAGMA foreign_keys = ON")
 
     def _query(self, sql: str, params: Sequence[Any] = ()) -> list[sqlite3.Row]:
         with self._lock:
